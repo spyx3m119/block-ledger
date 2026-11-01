@@ -100,6 +100,45 @@ function block_ledger_enqueue_editor() {
 }
 add_action( 'enqueue_block_editor_assets', 'block_ledger_enqueue_editor' );
 
+// Standalone admin page under Tools.
+add_action( 'admin_menu', function() {
+	add_menu_page(
+		__( 'Block Ledger', 'block-ledger' ),
+		__( 'Block Ledger', 'block-ledger' ),
+		'edit_posts',
+		'block-ledger',
+		'block_ledger_admin_page',
+		'dashicons-schedule',
+		null
+	);
+} );
+
+function block_ledger_admin_page() {
+	if ( ! current_user_can( 'edit_posts' ) ) {
+		wp_die( __( 'You do not have sufficient permissions to access this page.', 'block-ledger' ) );
+	}
+	?>
+	<div class="wrap">
+		<h1><?php esc_html_e( 'Block Ledger', 'block-ledger' ); ?></h1>
+		<p><?php esc_html_e( 'Site-wide block usage, inserter policy, and safe lifecycle controls.', 'block-ledger' ); ?></p>
+		<div id="block-ledger-admin-root" style="max-width: 900px; margin: 20px 0;"></div>
+	</div>
+	<?php
+	wp_enqueue_script( 'block-ledger-editor', plugins_url( 'build/index.js', __FILE__ ), array(), BLOCK_LEDGER_VERSION, true );
+	wp_localize_script(
+		'block-ledger-editor',
+		'blockLedgerData',
+		array(
+			'restRoot'    => rest_url( BLOCK_LEDGER_REST_NS ),
+			'restNonce'   => wp_create_nonce( 'wp_rest' ),
+			'canManage'   => current_user_can( 'manage_options' ),
+			'i18nRetire'  => __( 'Retire block', 'block-ledger' ),
+			'i18nRestore' => __( 'Restore', 'block-ledger' ),
+			'isAdminPage' => true,
+		)
+	);
+}
+
 // DEBUG: visible marker
 add_action( 'admin_head', function() {
 	echo '<!-- Block Ledger admin_head marker -->';
