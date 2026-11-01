@@ -26,7 +26,8 @@ function api( path, options = {} ) {
  * this keeps the inserter UI honest between page loads.
  */
 addFilter( 'blocks.useBlockFilters', 'block-ledger/hide-denied', ( blocks ) => {
-	const denied = select( 'core/editor' ).getSettings()?.__ledgerDenied || [];
+	const editor = select( 'core/editor' );
+	const denied = ( editor && editor.getSettings()?.__ledgerDenied ) || [];
 	if ( ! denied.length ) {
 		return blocks;
 	}
@@ -337,7 +338,15 @@ function BlockLedgerSidebar() {
 	);
 }
 
-registerPlugin( 'block-ledger/control', {
-	render: BlockLedgerSidebar,
-	icon: 'shield',
-} );
+function registerBlockLedgerPlugin() {
+	if ( window.wp && window.wp.plugins ) {
+		window.wp.plugins.registerPlugin( 'block-ledger/control', {
+			render: BlockLedgerSidebar,
+			icon: 'shield',
+		} );
+	} else {
+		setTimeout( registerBlockLedgerPlugin, 50 );
+	}
+}
+
+registerBlockLedgerPlugin();

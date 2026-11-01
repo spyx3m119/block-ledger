@@ -45,7 +45,7 @@ add_action( 'plugins_loaded', 'block_ledger_load' );
 function block_ledger_activate() {
 	require_once BLOCK_LEDGER_DIR . 'includes/class-block-ledger-audit.php';
 	Block_Ledger_Audit::instance()->install();
-	flush_rewrites();
+	flush_rewrite_rules();
 }
 register_activation_hook( __FILE__, 'block_ledger_activate' );
 
@@ -72,13 +72,6 @@ function block_ledger_enqueue_editor() {
 		$asset['dependencies'],
 		$asset['version'],
 		true
-	);
-
-	wp_enqueue_style(
-		'block-ledger-editor',
-		BLOCK_LEDGER_URL . 'build/style-index.css',
-		array( 'wp-edit-blocks' ),
-		$asset['version']
 	);
 
 	wp_set_script_translations( 'block-ledger-editor', 'block-ledger' );
