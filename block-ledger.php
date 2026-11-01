@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Block Ledger
  * Plugin URI:        https://github.com/spyx3m119/block-ledger
- * Description:       Governance, usage auditing, and safe lifecycle control for the WordPress block editor. Not another block library — a control plane over the editor.
+ * Description:       Block Ledger indexes every block in your WordPress content, shows usage counts, lets you hide blocks from the inserter, and safely retires blocks to static HTML with one-click restore. It is governance and observability for your content — no content blocks added.
  * Version:           0.1.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
@@ -66,12 +66,22 @@ function block_ledger_enqueue_editor() {
 		? require $asset_file
 		: array( 'dependencies' => array( 'wp-plugins', 'wp-edit-post', 'wp-components', 'wp-element', 'wp-blocks', 'wp-i18n', 'wp-data', 'wp-api-fetch', 'wp-hooks' ), 'version' => BLOCK_LEDGER_VERSION );
 
+	// Do NOT add wp-dom-ready — it may not be registered on all WP installs
+	// and can prevent the entire script from loading. Use setTimeout polling instead.
+
 	wp_enqueue_script(
 		'block-ledger-editor',
 		BLOCK_LEDGER_URL . 'build/index.js',
 		$asset['dependencies'],
 		$asset['version'],
 		true
+	);
+
+	// Ensure window.wp exists before our bundle runs.
+	wp_add_inline_script(
+		'block-ledger-editor',
+		'window.wp = window.wp || { plugins: { registerPlugin: function() {} }, editPost: {}, element: { createRoot: function(el){ return { render: function(){} }; } }, components: {}, i18n: {}, apiFetch: function() {}, hooks: {}, data: { select: function(){} } };',
+		'before'
 	);
 
 	wp_set_script_translations( 'block-ledger-editor', 'block-ledger' );
@@ -89,3 +99,8 @@ function block_ledger_enqueue_editor() {
 	);
 }
 add_action( 'enqueue_block_editor_assets', 'block_ledger_enqueue_editor' );
+
+// DEBUG: visible marker
+add_action( 'admin_head', function() {
+	echo '<!-- Block Ledger admin_head marker -->';
+}, 1 );

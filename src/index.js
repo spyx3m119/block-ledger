@@ -1,11 +1,17 @@
 import { registerPlugin } from '@wordpress/plugins';
 import { PluginSidebar, PluginSidebarMoreMenuItem } from '@wordpress/edit-post';
-import { useState, useEffect, useCallback } from '@wordpress/element';
 import { PanelBody, Button, Spinner, Notice, SelectControl, ToggleControl } from '@wordpress/components';
-import { __, sprintf } from '@wordpress/i18n';
+import { createElement as el, useState, useEffect, useCallback } from '@wordpress/element';
+import { __, _n, sprintf } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import { addFilter } from '@wordpress/hooks';
 import { select } from '@wordpress/data';
+
+console.log( 'Block Ledger script loaded' );
+const _blDiv = document.createElement( 'div' );
+_blDiv.id = 'bl-loaded-marker';
+_blDiv.style.display = 'none';
+document.body.appendChild( _blDiv );
 
 const DATA = window.blockLedgerData || {};
 const REST_ROOT = DATA.restRoot || '';
@@ -14,7 +20,7 @@ const CAN_MANAGE = DATA.canManage === true;
 
 function api( path, options = {} ) {
 	return apiFetch( {
-		path: REST_ROOT + path,
+		url: REST_ROOT + path,
 		...options,
 		headers: { ...( options.headers || {} ), 'X-WP-Nonce': REST_NONCE },
 	} );
@@ -40,6 +46,291 @@ addFilter( 'blocks.useBlockFilters', 'block-ledger/hide-denied', ( blocks ) => {
  * admins — a safe retire (convert every use to static HTML) with one-click
  * restore, plus a manual reindex.
  */
+/**
+ * Same UI as BlockLedgerSidebar, but without PluginSidebar wrappers so it can
+ * render into a standalone floating div outside the editor sidebar context.
+ */
+function BlockLedgerFloatingContent() {
+	const [ map, setMap ] = useState( null );
+	const [ busy, setBusy ] = useState( false );
+	const [ notice, setNotice ] = useState( null );
+	const [ denied, setDenied ] = useState( [] );
+	const [ confirmRetire, setConfirmRetire ] = useState( null );
+	const [ postTypes, setPostTypes ] = useState( [] );
+	const [ blockTypes, setBlockTypes ] = useState( [] );
+	const [ selectedPt, setSelectedPt ] = useState( '' );
+	const [ ptManaged, setPtManaged ] = useState( {} );
+	const [ ptAllowed, setPtAllowed ] = useState( {} );
+	const [ ptSaved, setPtSaved ] = useState( '{}' );
+	const [ ptSaving, setPtSaving ] = useState( false );
+
+	useEffect( () => {
+		api( '/usage' ).then( ( res ) => setMap( res.map || {} ) ).catch( () => setMap( {} ) );
+		api( '/policy' ).then( ( res ) => {
+			setDenied( res.denied || [] );
+			const pt = res.post_types || {};
+			const managed = {};
+			const allowed = {};
+			Object.keys( pt ).forEach( ( k ) => {
+				managed[ k ] = true;
+				allowed[ k ] = pt[ k ];
+			} );
+			setPtManaged( managed );
+			setPtAllowed( allowed );
+			setPtSaved( JSON.stringify( pt ) );
+		} ).catch( () => {} );
+		apiFetch( { path: '/wp/v2/types' } )
+			.then( ( types ) => {
+				const list = Object.values( types )
+					.filter( ( t ) => t && t.slug && t.show_in_rest !== false )
+					.map( ( t ) => ( { slug: t.slug, label: t.label || t.slug } ) )
+					.sort( ( a, b ) => String( a.label ).localeCompare( String( b.label ) ) );
+				setPostTypes( list );
+				if ( list.length ) setSelectedPt( list[ 0 ].slug );
+			} )
+			.catch( () => {} );
+	}, [] );
+
+	useEffect( () => {
+		const blocksStore = select( 'core/blocks' );
+		if ( blocksStore && blocksStore.getBlockTypes ) {
+			setBlockTypes( blocksStore.getBlockTypes() );
+		}
+	}, [] );
+
+	const refresh = useCallback( () => {
+		return api( '/usage' ).then( ( res ) => setMap( res.map || {} ) );
+	}, [] );
+
+	const reindex = useCallback( () => {
+		setBusy( true );
+		api( '/reindex', { method: 'POST' } )
+			.then( refresh )
+			.then( () => setNotice( { status: 'success', text: __( 'Ledger reindexed.', 'block-ledger' ) } ) )
+			.catch( () => setNotice( { status: 'warning', text: __( 'Reindex failed.', 'block-ledger' ) } ) )
+			.finally( () => setBusy( false ) );
+	}, [ refresh ] );
+
+	const toggleDeny = useCallback(
+		( name ) => {
+			const next = denied.includes( name )
+				? denied.filter( ( n ) => n !== name )
+				: [ ...denied, name ];
+			api( '/policy', { method: 'POST', data: { denied: next } } )
+				.then( ( res ) => setDenied( res.denied || [] ) )
+				.then( () => setNotice( { status: 'success', text: __( 'Inserter policy updated.', 'block-ledger' ) } ) )
+				.catch( () => setNotice( { status: 'warning', text: __( 'Policy update failed.', 'block-ledger' ) } ) );
+		},
+		[ denied ]
+	);
+
+	const doRetire = useCallback(
+		( name ) => {
+			setBusy( true );
+			api( '/retire', { method: 'POST', data: { block: name } } )
+				.then( () => {
+					setConfirmRetire( null );
+					setNotice( {
+						status: 'success',
+						text: sprintf(
+							/* translators: %s: block name */
+							__( 'Retired %s to static HTML. Use Restore to undo.', 'block-ledger' ),
+							name
+						),
+					} );
+				} )
+				.catch( ( e ) => setNotice( { status: 'warning', text: e?.message || __( 'Retire failed.', 'block-ledger' ) } ) )
+				.finally( () => { setBusy( false ); refresh(); } );
+		},
+		[ refresh ]
+	);
+
+	const doRestore = useCallback( () => {
+		setBusy( true );
+		api( '/restore', { method: 'POST' } )
+			.then( () => setNotice( { status: 'success', text: __( 'Restored the last snapshot.', 'block-ledger' ) } ) )
+			.catch( ( e ) => setNotice( { status: 'warning', text: e?.message || __( 'Restore failed.', 'block-ledger' ) } ) )
+			.finally( () => { setBusy( false ); refresh(); } );
+	}, [ refresh ] );
+
+	const buildPtMap = () => {
+		const m = {};
+		Object.keys( ptManaged ).forEach( ( pt ) => {
+			if ( ptManaged[ pt ] ) {
+				m[ pt ] = ptAllowed[ pt ] || [];
+			}
+		} );
+		return m;
+	};
+	const dirty = JSON.stringify( buildPtMap() ) !== ptSaved;
+	const managedNow = !! ptManaged[ selectedPt ];
+
+	const toggleManaged = () => {
+		if ( managedNow ) {
+			setPtManaged( ( prev ) => { const n = { ...prev }; delete n[ selectedPt ]; return n; } );
+			setPtAllowed( ( prev ) => { const n = { ...prev }; delete n[ selectedPt ]; return n; } );
+		} else {
+			const all = blockTypes.map( ( b ) => b.name );
+			setPtManaged( ( prev ) => ( { ...prev, [ selectedPt ]: true } ) );
+			setPtAllowed( ( prev ) => ( { ...prev, [ selectedPt ]: all } ) );
+		}
+	};
+
+	const togglePtBlock = ( name ) => {
+		setPtAllowed( ( prev ) => {
+			const cur = prev[ selectedPt ] || [];
+			const next = cur.includes( name ) ? cur.filter( ( n ) => n !== name ) : [ ...cur, name ];
+			return { ...prev, [ selectedPt ]: next };
+		} );
+	};
+
+	const savePtPolicy = () => {
+		setPtSaving( true );
+		const payload = buildPtMap();
+		api( '/policy', { method: 'POST', data: { post_types: payload } } )
+			.then( () => {
+				setPtSaved( JSON.stringify( payload ) );
+				setNotice( { status: 'success', text: __( 'Post-type policy saved.', 'block-ledger' ) } );
+			} )
+			.catch( ( e ) => setNotice( { status: 'warning', text: e?.message || __( 'Save failed.', 'block-ledger' ) } ) )
+			.finally( () => { setPtSaving( false ); } );
+	};
+
+	const listItems = ( map ? Object.entries( map ) : [] )
+		.sort( ( a, b ) => b[ 1 ].uses - a[ 1 ].uses )
+		.map( ( [ name, stats ] ) => {
+			const confirming = confirmRetire === name;
+			return (
+				<li
+					key={ name }
+					style={ { display: 'flex', justifyContent: 'space-between', gap: 8, padding: '4px 0', borderBottom: '1px solid var(--border-color, #ddd)', alignItems: 'center' } }
+				>
+					<span title={ name } style={ { fontFamily: 'monospace', fontSize: '12px', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }>{ name }</span>
+					<span style={ { display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 } }>
+						<span style={ { fontSize: '12px' } }>{ stats.items }×</span>
+						<Button
+							isSmall
+							variant={ denied.includes( name ) ? 'primary' : 'link' }
+							onClick={ () => toggleDeny( name ) }
+						>
+							{ denied.includes( name ) ? __( 'hidden', 'block-ledger' ) : __( 'hide', 'block-ledger' ) }
+						</Button>
+						{ CAN_MANAGE && ! confirming && (
+							<Button isSmall variant="danger" onClick={ () => setConfirmRetire( name ) }>
+								{ __( 'retire', 'block-ledger' ) }
+							</Button>
+						) }
+						{ CAN_MANAGE && confirming && (
+							<>
+								<Button isSmall variant="primary" onClick={ () => doRetire( name ) } isBusy={ busy }>
+									{ __( 'yes', 'block-ledger' ) }
+								</Button>
+								<Button isSmall variant="link" onClick={ () => setConfirmRetire( null ) }>
+									{ __( 'no', 'block-ledger' ) }
+								</Button>
+							</>
+						) }
+					</span>
+				</li>
+			);
+		} );
+
+	return (
+		<>
+			<PanelBody initialOpen={ true } title={ __( 'Block usage', 'block-ledger' ) }>
+				{ notice && <Notice status={ notice.status } isDismissible={ false }>{ notice.text }</Notice> }
+				<div style={ { display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' } }>
+					<Button variant="secondary" isBusy={ busy } onClick={ reindex }>
+						{ __( 'Reindex', 'block-ledger' ) }
+					</Button>
+					{ CAN_MANAGE && (
+						<Button variant="secondary" isBusy={ busy } onClick={ doRestore }>
+							{ __( 'Restore', 'block-ledger' ) }
+						</Button>
+					) }
+					<span style={ { fontSize: '12px' } }>{ map ? `${ Object.keys( map ).length } blocks in use` : '' }</span>
+				</div>
+				{ map === null && <Spinner /> }
+				{ map && Object.keys( map ).length === 0 && (
+					<p style={ { fontSize: '12px', color: 'var(--muted-foreground, #666)' } }>
+						{ __( 'No blocks indexed yet. Click Reindex.', 'block-ledger' ) }
+					</p>
+				) }
+				<ul style={ { listStyle: 'none', margin: 0, padding: 0, maxHeight: '44vh', overflowY: 'auto' } }>
+					{ listItems }
+				</ul>
+			</PanelBody>
+
+			{ CAN_MANAGE && postTypes.length > 0 && (
+				<PanelBody initialOpen={ false } title={ __( 'Per-post-type policy', 'block-ledger' ) }>
+					<p style={ { fontSize: '12px', color: 'var(--muted-foreground, #666)', margin: 0 } }>
+						{ __(
+							'Override which blocks the inserter offers for a specific content type. When set, it wins over the global hide/allow policy.',
+							'block-ledger'
+						) }
+					</p>
+					<SelectControl
+						label={ __( 'Content type', 'block-ledger' ) }
+						value={ selectedPt }
+						options={ postTypes.map( ( pt ) => ( { label: pt.label, value: pt.slug } ) ) }
+						onChange={ setSelectedPt }
+					/>
+					{ selectedPt && (
+						<>
+							<p style={ { fontSize: '12px', color: 'var(--muted-foreground, #666)' } }>
+								{ managedNow
+									? __( 'Custom block list active for this type.', 'block-ledger' )
+									: __( 'This type follows the global policy.', 'block-ledger' ) }
+							</p>
+							{ ! managedNow ? (
+								<Button variant="secondary" onClick={ toggleManaged }>
+									{ __( 'Use a custom block list', 'block-ledger' ) }
+								</Button>
+							) : (
+								<>
+									<div style={ { maxHeight: 260, overflowY: 'auto', border: '1px solid var(--border-color, #ddd)', padding: 4 } }>
+										{ blockTypes.length === 0 && (
+											<p style={ { fontSize: '12px', color: 'var(--muted-foreground, #666)' } }>{ __( 'Loading blocks…', 'block-ledger' ) }</p>
+										) }
+										{ blockTypes.map( ( b ) => (
+											<ToggleControl
+												key={ b.name }
+												label={ b.title || b.name }
+												__nextHasNoMargin
+												checked={ ( ptAllowed[ selectedPt ] || [] ).includes( b.name ) }
+												onChange={ () => togglePtBlock( b.name ) }
+											/>
+										) ) }
+									</div>
+									<div style={ { display: 'flex', gap: 8, marginTop: 8 } }>
+										<Button variant="primary" isBusy={ ptSaving } disabled={ ! dirty } onClick={ savePtPolicy }>
+											{ __( 'Save', 'block-ledger' ) }
+										</Button>
+										<Button variant="secondary" onClick={ toggleManaged }>
+											{ __( 'Revert to global', 'block-ledger' ) }
+										</Button>
+									</div>
+								</>
+							) }
+						</>
+					) }
+				</PanelBody>
+			) }
+
+			{ CAN_MANAGE && (
+				<PanelBody initialOpen={ false } title={ __( 'Safe remove', 'block-ledger' ) }>
+					<p style={ { fontSize: '12px', color: 'var(--muted-foreground, #666)', margin: 0 } }>
+						{ __(
+							'Retire converts every use of a block into plain static HTML so the block can be removed without breaking content. The original is snapshotted, so Restore brings it back. Validate on a staging copy first.',
+							'block-ledger'
+						) }
+					</p>
+				</PanelBody>
+			) }
+		</>
+	);
+}
+
 function BlockLedgerSidebar() {
 	const [ map, setMap ] = useState( null );
 	const [ busy, setBusy ] = useState( false );
@@ -338,15 +629,54 @@ function BlockLedgerSidebar() {
 	);
 }
 
+
+
 function registerBlockLedgerPlugin() {
-	if ( window.wp && window.wp.plugins ) {
-		window.wp.plugins.registerPlugin( 'block-ledger/control', {
+	const wp = window.wp;
+	if ( ! wp || ! wp.plugins || ! wp.data ) {
+		console.log( 'Block Ledger: wp not ready yet' );
+		setTimeout( registerBlockLedgerPlugin, 100 );
+		return;
+	}
+	try {
+		const editor = wp.data.select( 'core/editor' );
+		if ( ! editor ) {
+			console.log( 'Block Ledger: core/editor store not ready' );
+			setTimeout( registerBlockLedgerPlugin, 100 );
+			return;
+		}
+		wp.plugins.registerPlugin( 'block-ledger/control', {
 			render: BlockLedgerSidebar,
 			icon: 'shield',
 		} );
-	} else {
-		setTimeout( registerBlockLedgerPlugin, 50 );
+		console.log( 'Block Ledger: registered successfully' );
+	} catch ( e ) {
+		console.log( 'Block Ledger: registration error', e.message );
+		setTimeout( registerBlockLedgerPlugin, 100 );
 	}
 }
 
 registerBlockLedgerPlugin();
+
+// Inject the panel into the editor sidebar, or fall back to a floating panel.
+function injectBlockLedgerPanel() {
+	if ( ! window.wp || ! window.wp.element || ! window.wp.element.createRoot ) {
+		return;
+	}
+	// Prefer the editor sidebar if it exists.
+	const sidebar = document.querySelector( '.edit-post-sidebar, #editor-sidebar, .interface-interface-skeleton__sidebar' );
+	const container = document.createElement( 'div' );
+	container.id = 'block-ledger-panel';
+	container.style.cssText = 'padding:16px;border-bottom:1px solid #ddd;background:#fff;';
+	if ( sidebar ) {
+		sidebar.insertBefore( container, sidebar.firstChild );
+		console.log( 'Block Ledger: panel injected into sidebar' );
+	} else {
+		container.style.cssText = 'position:fixed;top:80px;right:20px;width:320px;max-height:calc(100vh - 100px);overflow-y:auto;background:#fff;border:1px solid #ddd;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.15);z-index:99999;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif;font-size:13px;';
+		document.body.appendChild( container );
+		console.log( 'Block Ledger: floating panel rendered' );
+	}
+	const root = window.wp.element.createRoot( container );
+	root.render( window.wp.element.createElement( BlockLedgerFloatingContent ) );
+}
+setTimeout( injectBlockLedgerPanel, 800 );

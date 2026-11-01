@@ -6,6 +6,16 @@ Block *usage auditing*, *insertion governance*, and *safe lifecycle* for Gutenbe
 
 > The last one is the point. WordPress stores post content as `<!-- wp:block -->…</div>` HTML comments with **no registry**. When a block plugin updates, deactivates, or disappears, that content silently breaks. Block Ledger is the anti-lock-in answer: **retire** any block to portable static HTML, with a one-click **restore**.
 
+## What it does, in plain language
+
+Block Ledger sits inside the WordPress block editor and gives you three things:
+
+- **Visibility** — see every block type your site uses, and how many times, in one list.
+- **Governance** — stop editors from inserting blocks you don't want, without deleting existing content.
+- **Safe removal** — convert a block to plain HTML so you can remove the block plugin without breaking pages, with one-click undo.
+
+It adds **no content blocks** of its own. It is a control panel, not a block library.
+
 ---
 
 ## Why
@@ -65,11 +75,23 @@ Copy the `block-ledger` folder into `wp-content/plugins/` (or zip it and upload 
 
 ## Usage
 
-Open any post/page in the block editor. The top-right **⋮ (more) menu → Block Ledger** opens the sidebar:
+Open any post/page in the block editor. The **Block Ledger** panel opens in the editor sidebar:
 
 - **Reindex** — rescan all content now.
 - **Block list** — each block with its use count (`12×`, `4 items`).
 - **hide / hidden** — toggle the block out of (or back into) the inserter for your role.
+
+### What "hide" does
+
+When you click **hide** next to a block name, Block Ledger adds that block to a deny list. The server then removes it from the inserter for everyone, and the client-side filter removes it from the UI between page loads. Existing content is **not** touched — the block stays in posts that already use it. Clicking **hidden** reverses the deny and makes the block available again.
+
+**How to test it:**
+
+1. Open any post in the block editor.
+2. In the Block Ledger panel, click **hide** next to a block you can see in the inserter (for example `core/quote`).
+3. Click the **+ (Inserter)** button and search for that block — it should no longer appear.
+4. Return to the Block Ledger panel and click **hidden** next to the same block.
+5. Reopen the inserter — the block should be available again.
 - **Per-post-type policy** *(admins only)* — choose which blocks each content type's inserter offers; overrides the global hide/allow for that type.
 - **Retire** *(admins only)* — per-block, with a confirm step: convert every use to static HTML.
 - **Restore** *(admins only)* — undo the last retire batch.
