@@ -33,11 +33,37 @@ Clone the repository and run `npm install && npm run build` to compile the edito
 
 == Screenshots ==
 
-1. Tools → Block Ledger dashboard showing site-wide block usage with counts.
-2. Editor sidebar panel with block usage list and hide/retire actions.
-3. Per-post-type policy panel with block toggles.
+1. Tools → Block Ledger dashboard showing site-wide block usage with counts and actions.
+2. Editor sidebar panel with block usage list, hide/retire actions, and per-post-type policy.
+
+
+== Frequently Asked Questions ==
+
+= Does Block Ledger add content blocks? =
+No. It is a control panel, not a block library. It adds no content blocks of its own.
+
+= Will hiding a block delete existing content? =
+No. Hiding a block removes it from the inserter only. Existing content that uses that block is untouched.
+
+= What does "retire" do? =
+Retire converts every instance of a block to plain static HTML and snapshots the original. This lets you remove a block plugin without breaking pages. Restore brings the original back.
+
+= Is the Pro tier a paywall inside the free plugin? =
+No. The free plugin is 100% GPL with no feature gates. Pro is a separate plugin or external purchase flow only.
+
+= Can I use this on multisite? =
+Yes. The usage index and policy settings are stored as site options. Network admins can manage policies from Tools → Block Ledger.
 
 == Changelog ==
+
+= 0.1.0 =
+* Initial release.
+* Site-wide block usage index with counts.
+* Hide/show blocks from inserter (global + per post-type).
+* Safe retire/restore with snapshot.
+* Tools → Block Ledger admin dashboard.
+* Editor sidebar panel fallback.
+
 
 = 0.1.0 =
 * Initial release: usage ledger, inserter allow/deny policy, safe block retirement with restore.

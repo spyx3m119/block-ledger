@@ -63,6 +63,7 @@ function BlockLedgerFloatingContent() {
 	const [ ptAllowed, setPtAllowed ] = useState( {} );
 	const [ ptSaved, setPtSaved ] = useState( '{}' );
 	const [ ptSaving, setPtSaving ] = useState( false );
+	const [ locks, setLocks ] = useState( {} );
 	const [ lastIndexed, setLastIndexed ] = useState( null );
 	const [ apiError, setApiError ] = useState( null );
 
@@ -91,6 +92,7 @@ function BlockLedgerFloatingContent() {
 			setPtManaged( managed );
 			setPtAllowed( allowed );
 			setPtSaved( JSON.stringify( pt ) );
+			setLocks( res.locks || {} );
 		} ).catch( () => {} );
 		apiFetch( { path: '/wp/v2/types' } )
 			.then( ( types ) => {
@@ -135,6 +137,24 @@ function BlockLedgerFloatingContent() {
 				.catch( () => setNotice( { status: 'warning', text: __( 'Policy update failed.', 'block-ledger' ) } ) );
 		},
 		[ denied ]
+	);
+
+	const toggleLock = useCallback(
+		( key ) => {
+			setLocks( ( prev ) => ( { ...prev, [ key ]: ! prev[ key ] } ) );
+		},
+		[]
+	);
+
+	const saveLocks = useCallback(
+		() => {
+			setBusy( true );
+			api( '/policy', { method: 'POST', data: { locks } } )
+				.then( () => setNotice( { status: 'success', text: __( 'Editor settings locked.', 'block-ledger' ) } ) )
+				.catch( () => setNotice( { status: 'warning', text: __( 'Lock update failed.', 'block-ledger' ) } ) )
+				.finally( () => setBusy( false ) );
+		},
+		[ locks ]
 	);
 
 	const doRetire = useCallback(
@@ -369,6 +389,7 @@ function BlockLedgerSidebar() {
 	const [ ptAllowed, setPtAllowed ] = useState( {} ); // { pt: [blockName] }
 	const [ ptSaved, setPtSaved ] = useState( '{}' );   // last-persisted map, for a dirty check
 	const [ ptSaving, setPtSaving ] = useState( false );
+	const [ locks, setLocks ] = useState( {} );
 	const [ lastIndexed, setLastIndexed ] = useState( null );
 	const [ apiError, setApiError ] = useState( null );
 
