@@ -1,0 +1,17 @@
+{
+	"name": "block-ledger",
+	"version": "0.1.0",
+	"description": "Governance, usage auditing, and safe lifecycle control for the WordPress block editor.",
+	"author": "Your Name",
+	"license": "GPL-2.0-or-later",
+	"main": "build/index.js",
+	"scripts": {
+		"build": "wp-scripts build src/index.js --output-path=build",
+		"start": "wp-scripts start src/index.js --output-path=build",
+		"lint:js": "wp-scripts lint-js src",
+		"lint:pkg": "wp-scripts check-plugin-header"
+	},
+	"devDependencies": {
+		"@wordpress/scripts": "^27.7.0"
+	}
+}

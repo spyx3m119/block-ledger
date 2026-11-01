@@ -1,0 +1,14 @@
+.block-ledger__list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.block-ledger__row {
+	display: flex;
+	justify-content: space-between;
+	gap: 8px;
+	align-items: center;
+	padding: 4px 0;
+	border-bottom: 1px solid var(--border-color, #ddd);
+}
