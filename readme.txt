@@ -30,6 +30,13 @@ The safe-deactivation feature is the anti-lock-in core: deactivate a block plugi
 
 Clone the repository and run `npm install && npm run build` to compile the editor assets into `build/`.
 
+
+== Screenshots ==
+
+1. Tools → Block Ledger dashboard showing site-wide block usage with counts.
+2. Editor sidebar panel with block usage list and hide/retire actions.
+3. Per-post-type policy panel with block toggles.
+
 == Changelog ==
 
 = 0.1.0 =
