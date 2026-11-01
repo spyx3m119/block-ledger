@@ -1,13 +1,13 @@
 <?php
 /**
  * Plugin Name:       Block Ledger
- * Plugin URI:        https://example.com/block-ledger
+ * Plugin URI:        https://github.com/spyx3m119/block-ledger
  * Description:       Governance, usage auditing, and safe lifecycle control for the WordPress block editor. Not another block library — a control plane over the editor.
  * Version:           0.1.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
- * Author:            Your Name
- * Author URI:        https://example.com
+ * Author:            Vlad Parole
+ * Author URI:        https://github.com/spyx3m119
  * License:           GPLv2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       block-ledger

@@ -26,7 +26,7 @@ Block Ledger builds the under-served control plane.
 On activation it builds a usage index (`wp_block_ledger_usage`) by parsing **every** content surface with `parse_blocks()`: posts, pages, custom post types, reusable blocks (`core/block`), and FSE templates (`wp_template`, `wp_template_part`). The editor sidebar shows each block in use, how many items use it, sorted by frequency. Re-scans twice daily, or on demand with a **Reindex** button.
 
 ### 2. Governance — insertion policy
-A server-side `allowed_block_types_all` filter gates what the inserter offers — **deny-list or allowlist**, per the configured policy. Editor settings can be locked per role (`codeEditingEnabled`, `canUploadFiles`, `isRTL`, `hasFixedWidth`). A client-side `blocks.useBlockFilters` filter keeps the inserter UI honest between loads (defense-in-depth; the server filter is the real enforcement).
+A server-side `allowed_block_types_all` filter gates what the inserter offers — **deny-list or allowlist**, global or **scoped per post type** (a custom inserter per content type, which wins over the global policy). Block names are validated to the `namespace/name` shape (a bare name is treated as `core/…`); anything else is dropped. Editor settings can be locked per role (`codeEditingEnabled`, `canUploadFiles`, `isRTL`, `hasFixedWidth`). A client-side `blocks.useBlockFilters` filter keeps the inserter UI honest between loads (defense-in-depth; the server filter is the real enforcement).
 
 ### 3. Safe lifecycle — retire & restore (the differentiator)
 **Retire** a block type without breaking content:
@@ -70,6 +70,7 @@ Open any post/page in the block editor. The top-right **⋮ (more) menu → Bloc
 - **Reindex** — rescan all content now.
 - **Block list** — each block with its use count (`12×`, `4 items`).
 - **hide / hidden** — toggle the block out of (or back into) the inserter for your role.
+- **Per-post-type policy** *(admins only)* — choose which blocks each content type's inserter offers; overrides the global hide/allow for that type.
 - **Retire** *(admins only)* — per-block, with a confirm step: convert every use to static HTML.
 - **Restore** *(admins only)* — undo the last retire batch.
 
@@ -83,8 +84,8 @@ Namespace `block-ledger/v1` (all under `wp-json/block-ledger/v1`):
 | ------ | --------------- | --------------- | ---------------------------------------- |
 | `GET`  | `/usage`        | `read`          | `{ map: { 'core/image': { uses, items } } }` |
 | `POST` | `/reindex`      | `manage_options`| Rebuild the usage index.                 |
-| `GET`  | `/policy`       | `edit_posts`    | `{ denied: [...] }`                       |
-| `POST` | `/policy`       | `manage_options`| Set `{ denied: [...] }`.                  |
+| `GET`  | `/policy`       | `edit_posts`    | `{ denied, allowed, post_types, locks }`  |
+| `POST` | `/policy`       | `manage_options`| Set `{ denied, allowed, post_types, locks }`. |
 | `POST` | `/retire`       | `manage_options`| `{ block: 'core/quote' }` → static-ize every use. |
 | `POST` | `/restore`      | `manage_options`| Restore the last snapshot.                |
 
@@ -126,7 +127,7 @@ src/
 
 ## Roadmap
 
-- **Per-post-type policy** and reusable-block management.
+- **Reusable-block management** (governance/audit across the `core/block` reusable library).
 - **Pro tier** (separate plugin / external purchase — never an in-code paywall, per the GPL): block-style libraries, theme.json enforcement, scheduled safe-migrations, bulk edit-undo.
 
 The Pro tier is shipped as a **separate plugin or external checkout**, never as `if ( ! $paid ) return;` inside this GPL code.

@@ -2,7 +2,7 @@
 	"name": "block-ledger",
 	"version": "0.1.0",
 	"description": "Governance, usage auditing, and safe lifecycle control for the WordPress block editor.",
-	"author": "Your Name",
+	"author": "Vlad Parole",
 	"license": "GPL-2.0-or-later",
 	"main": "build/index.js",
 	"scripts": {

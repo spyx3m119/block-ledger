@@ -1,7 +1,7 @@
 import { registerPlugin } from '@wordpress/plugins';
 import { PluginSidebar, PluginSidebarMoreMenuItem } from '@wordpress/edit-post';
 import { useState, useEffect, useCallback } from '@wordpress/element';
-import { PanelBody, Button, Spinner, Notice } from '@wordpress/components';
+import { PanelBody, Button, Spinner, Notice, SelectControl, ToggleControl } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import { addFilter } from '@wordpress/hooks';
@@ -35,8 +35,9 @@ addFilter( 'blocks.useBlockFilters', 'block-ledger/hide-denied', ( blocks ) => {
 
 /**
  * Control-plane sidebar: show every block in use, how many items use it, offer
- * one-click "hide from inserter", and — for admins — a safe retire (convert
- * every use to static HTML) with one-click restore, plus a manual reindex.
+ * one-click "hide from inserter", per-post-type insertion policy, and — for
+ * admins — a safe retire (convert every use to static HTML) with one-click
+ * restore, plus a manual reindex.
  */
 function BlockLedgerSidebar() {
 	const [ map, setMap ] = useState( null );
@@ -45,13 +46,54 @@ function BlockLedgerSidebar() {
 	const [ denied, setDenied ] = useState( [] );
 	const [ confirmRetire, setConfirmRetire ] = useState( null );
 
+	// Per-post-type policy.
+	const [ postTypes, setPostTypes ] = useState( [] );
+	const [ blockTypes, setBlockTypes ] = useState( [] );
+	const [ selectedPt, setSelectedPt ] = useState( '' );
+	const [ ptManaged, setPtManaged ] = useState( {} ); // { pt: bool } — has an explicit allowlist
+	const [ ptAllowed, setPtAllowed ] = useState( {} ); // { pt: [blockName] }
+	const [ ptSaved, setPtSaved ] = useState( '{}' );   // last-persisted map, for a dirty check
+	const [ ptSaving, setPtSaving ] = useState( false );
+
 	useEffect( () => {
 		api( '/usage' )
 			.then( ( res ) => setMap( res.map || {} ) )
 			.catch( () => setMap( {} ) );
 		api( '/policy' )
-			.then( ( res ) => setDenied( res.denied || [] ) )
+			.then( ( res ) => {
+				setDenied( res.denied || [] );
+				const pt = res.post_types || {};
+				const managed = {};
+				const allowed = {};
+				Object.keys( pt ).forEach( ( k ) => {
+					managed[ k ] = true;
+					allowed[ k ] = pt[ k ];
+				} );
+				setPtManaged( managed );
+				setPtAllowed( allowed );
+				setPtSaved( JSON.stringify( pt ) );
+			} )
 			.catch( () => {} );
+		// Public endpoint: which post types the editor can target.
+		apiFetch( { path: '/wp/v2/types' } )
+			.then( ( types ) => {
+				const list = Object.values( types )
+					.filter( ( t ) => t && t.slug && t.show_in_rest !== false )
+					.map( ( t ) => ( { slug: t.slug, label: t.label || t.slug } ) )
+					.sort( ( a, b ) => String( a.label ).localeCompare( String( b.label ) ) );
+				setPostTypes( list );
+				if ( list.length ) {
+					setSelectedPt( list[ 0 ].slug );
+				}
+			} )
+			.catch( () => {} );
+	}, [] );
+
+	useEffect( () => {
+		const blocksStore = select( 'core/blocks' );
+		if ( blocksStore && blocksStore.getBlockTypes ) {
+			setBlockTypes( blocksStore.getBlockTypes() );
+		}
 	}, [] );
 
 	const refresh = useCallback( () => {
@@ -106,6 +148,50 @@ function BlockLedgerSidebar() {
 			.catch( ( e ) => setNotice( { status: 'warning', text: e?.message || __( 'Restore failed.', 'block-ledger' ) } ) )
 			.finally( () => { setBusy( false ); refresh(); } );
 	}, [ refresh ] )
+
+	// --- per-post-type policy helpers ---------------------------------------
+	const buildPtMap = () => {
+		const m = {};
+		Object.keys( ptManaged ).forEach( ( pt ) => {
+			if ( ptManaged[ pt ] ) {
+				m[ pt ] = ptAllowed[ pt ] || [];
+			}
+		} );
+		return m;
+	};
+	const dirty = JSON.stringify( buildPtMap() ) !== ptSaved;
+	const managedNow = !! ptManaged[ selectedPt ];
+
+	const toggleManaged = () => {
+		if ( managedNow ) {
+			setPtManaged( ( prev ) => { const n = { ...prev }; delete n[ selectedPt ]; return n; } );
+			setPtAllowed( ( prev ) => { const n = { ...prev }; delete n[ selectedPt ]; return n; } );
+		} else {
+			const all = blockTypes.map( ( b ) => b.name );
+			setPtManaged( ( prev ) => ( { ...prev, [ selectedPt ]: true } ) );
+			setPtAllowed( ( prev ) => ( { ...prev, [ selectedPt ]: all } ) );
+		}
+	};
+
+	const togglePtBlock = ( name ) => {
+		setPtAllowed( ( prev ) => {
+			const cur = prev[ selectedPt ] || [];
+			const next = cur.includes( name ) ? cur.filter( ( n ) => n !== name ) : [ ...cur, name ];
+			return { ...prev, [ selectedPt ]: next };
+		} );
+	};
+
+	const savePtPolicy = () => {
+		setPtSaving( true );
+		const payload = buildPtMap();
+		api( '/policy', { method: 'POST', data: { post_types: payload } } )
+			.then( () => {
+				setPtSaved( JSON.stringify( payload ) );
+				setNotice( { status: 'success', text: __( 'Post-type policy saved.', 'block-ledger' ) } );
+			} )
+			.catch( ( e ) => setNotice( { status: 'warning', text: e?.message || __( 'Save failed.', 'block-ledger' ) } ) )
+			.finally( () => { setPtSaving( false ); } );
+	};
 
 	const listItems = ( map ? Object.entries( map ) : [] )
 		.sort( ( a, b ) => b[ 1 ].uses - a[ 1 ].uses )
@@ -171,6 +257,63 @@ function BlockLedgerSidebar() {
 					{ listItems }
 				</ul>
 			</PanelBody>
+
+			{ CAN_MANAGE && postTypes.length > 0 && (
+				<PanelBody initialOpen={ false } title={ __( 'Per-post-type policy', 'block-ledger' ) }>
+					<p style={ { fontSize: '12px', color: 'var(--muted-foreground, #666)', margin: 0 } }>
+						{ __(
+							'Override which blocks the inserter offers for a specific content type. When set, it wins over the global hide/allow policy.',
+							'block-ledger'
+						) }
+					</p>
+					<SelectControl
+						label={ __( 'Content type', 'block-ledger' ) }
+						value={ selectedPt }
+						options={ postTypes.map( ( pt ) => ( { label: pt.label, value: pt.slug } ) ) }
+						onChange={ setSelectedPt }
+					/>
+					{ selectedPt && (
+						<>
+							<p style={ { fontSize: '12px', color: 'var(--muted-foreground, #666)' } }>
+								{ managedNow
+									? __( 'Custom block list active for this type.', 'block-ledger' )
+									: __( 'This type follows the global policy.', 'block-ledger' ) }
+							</p>
+							{ ! managedNow ? (
+								<Button variant="secondary" onClick={ toggleManaged }>
+									{ __( 'Use a custom block list', 'block-ledger' ) }
+								</Button>
+							) : (
+								<>
+									<div style={ { maxHeight: 260, overflowY: 'auto', border: '1px solid var(--border-color, #ddd)', padding: 4 } }>
+										{ blockTypes.length === 0 && (
+											<p style={ { fontSize: '12px', color: 'var(--muted-foreground, #666)' } }>{ __( 'Loading blocks…', 'block-ledger' ) }</p>
+										) }
+										{ blockTypes.map( ( b ) => (
+											<ToggleControl
+												key={ b.name }
+												label={ b.title || b.name }
+												__nextHasNoMargin
+												checked={ ( ptAllowed[ selectedPt ] || [] ).includes( b.name ) }
+												onChange={ () => togglePtBlock( b.name ) }
+											/>
+										) ) }
+									</div>
+									<div style={ { display: 'flex', gap: 8, marginTop: 8 } }>
+										<Button variant="primary" isBusy={ ptSaving } disabled={ ! dirty } onClick={ savePtPolicy }>
+											{ __( 'Save', 'block-ledger' ) }
+										</Button>
+										<Button variant="secondary" onClick={ toggleManaged }>
+											{ __( 'Revert to global', 'block-ledger' ) }
+										</Button>
+									</div>
+								</>
+							) }
+						</>
+					) }
+				</PanelBody>
+			) }
+
 			{ CAN_MANAGE && (
 				<PanelBody initialOpen={ false } title={ __( 'Safe remove', 'block-ledger' ) }>
 					<p style={ { fontSize: '12px', color: 'var(--muted-foreground, #666)', margin: 0 } }>

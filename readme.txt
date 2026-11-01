@@ -1,5 +1,5 @@
 === Block Ledger ===
-Contributors:      yourname
+Contributors:      spyx3m119
 Tags:              block-editor, gutenberg, editor, blocks, governance
 Requires at least: 6.0
 Tested up to:      6.7

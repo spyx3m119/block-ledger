@@ -38,6 +38,28 @@ final class Block_Ledger_Policy {
 	}
 
 	/**
+	 * Validate a block-type identifier for storage.
+	 *
+	 * Block names carry a namespace slash (core/paragraph, kadence/rowlayout)
+	 * that sanitize_key() would strip, so we validate the shape instead: a bare
+	 * name is assumed to live in the core namespace, and anything that is not a
+	 * well-formed `namespace/name` identifier is dropped.
+	 */
+	private function sanitize_block_name( $name ) {
+		$name = strtolower( trim( (string) $name ) );
+		if ( '' === $name || false !== strpos( $name, ' ' ) ) {
+			return '';
+		}
+		if ( false === strpos( $name, '/' ) ) {
+			$name = 'core/' . $name;
+		}
+		if ( ! preg_match( '#^[a-z0-9_\-]+/[a-z0-9_\-]+$#', $name ) ) {
+			return '';
+		}
+		return $name;
+	}
+
+	/**
 	 * Restrict which blocks the inserter offers.
 	 *
 	 * Precedence: per-post-type allowlist > denied list (all minus denied) >
@@ -111,18 +133,33 @@ final class Block_Ledger_Policy {
 		$current = $this->get_policy();
 
 		if ( isset( $body['denied'] ) ) {
-			$current['denied'] = array_values( array_filter( array_map( 'sanitize_key', (array) $body['denied'] ) ) );
+			$current['denied'] = array_values( array_filter( array_map( array( $this, 'sanitize_block_name' ), (array) $body['denied'] ) ) );
 		}
 		if ( isset( $body['allowed'] ) ) {
-			$current['allowed'] = array_values( array_filter( array_map( 'sanitize_key', (array) $body['allowed'] ) ) );
+			$current['allowed'] = array_values( array_filter( array_map( array( $this, 'sanitize_block_name' ), (array) $body['allowed'] ) ) );
 		}
 		if ( isset( $body['locks'] ) ) {
 			$allowed_locks = array( 'codeEditingEnabled', 'canUploadFiles', 'isRTL', 'hasFixedWidth' );
 			foreach ( (array) $body['locks'] as $k => $v ) {
 				if ( in_array( $k, $allowed_locks, true ) ) {
-					$current['locks'][ $k ] = (bool) $v;
+					$current[ 'locks' ][ $k ] = (bool) $v;
 				}
 			}
+		}
+
+		if ( isset( $body['post_types'] ) && is_array( $body['post_types'] ) ) {
+			$post_types = array();
+			foreach ( (array) $body['post_types'] as $pt => $blocks ) {
+				$pt = sanitize_key( (string) $pt );
+				if ( '' === $pt ) {
+					continue;
+				}
+				// A populated list becomes the exact set of blocks offered in
+				// that post type's inserter; an empty one clears it (falls back
+				// to the global policy).
+				$post_types[ $pt ] = array_values( array_filter( array_map( array( $this, 'sanitize_block_name' ), (array) $blocks ) ) );
+			}
+			$current[ 'post_types' ] = $post_types;
 		}
 
 		update_option( self::OPTION_POLICY, $current );
