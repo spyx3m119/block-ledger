@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Block Ledger
  * Plugin URI:        https://github.com/spyx3m119/block-ledger
- * Description:       Block Ledger indexes every block in your WordPress content, shows usage counts, lets you hide blocks from the inserter, and safely retires blocks to static HTML with one-click restore. It is governance and observability for your content — no content blocks added.
+ * Description:       Solves WordPress content decay: indexes every block site-wide, locks down the inserter, and safely retires blocks to static HTML with one-click restore. No content blocks added — this is a control plane, not a block library.
  * Version:           0.1.0
  * Requires at least: 6.0
  * Requires PHP:      7.4

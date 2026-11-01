@@ -658,25 +658,31 @@ function registerBlockLedgerPlugin() {
 
 registerBlockLedgerPlugin();
 
-// Inject the panel into the editor sidebar, or fall back to a floating panel.
-function injectBlockLedgerPanel() {
+// Mount the panel: on the standalone admin page use that container,
+// otherwise inject into the editor sidebar with a floating fallback.
+function mountBlockLedgerPanel() {
 	if ( ! window.wp || ! window.wp.element || ! window.wp.element.createRoot ) {
 		return;
 	}
-	// Prefer the editor sidebar if it exists.
-	const sidebar = document.querySelector( '.edit-post-sidebar, #editor-sidebar, .interface-interface-skeleton__sidebar' );
+	const adminRoot = document.getElementById( 'block-ledger-admin-root' );
 	const container = document.createElement( 'div' );
-	container.id = 'block-ledger-panel';
-	container.style.cssText = 'padding:16px;border-bottom:1px solid #ddd;background:#fff;';
-	if ( sidebar ) {
-		sidebar.insertBefore( container, sidebar.firstChild );
-		console.log( 'Block Ledger: panel injected into sidebar' );
+	if ( adminRoot ) {
+		adminRoot.appendChild( container );
+		console.log( 'Block Ledger: mounted on admin page' );
 	} else {
-		container.style.cssText = 'position:fixed;top:80px;right:20px;width:320px;max-height:calc(100vh - 100px);overflow-y:auto;background:#fff;border:1px solid #ddd;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.15);z-index:99999;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif;font-size:13px;';
-		document.body.appendChild( container );
-		console.log( 'Block Ledger: floating panel rendered' );
+		const sidebar = document.querySelector( '.edit-post-sidebar, #editor-sidebar, .interface-interface-skeleton__sidebar' );
+		container.id = 'block-ledger-panel';
+		container.style.cssText = 'padding:16px;border-bottom:1px solid #ddd;background:#fff;';
+		if ( sidebar ) {
+			sidebar.insertBefore( container, sidebar.firstChild );
+			console.log( 'Block Ledger: panel injected into sidebar' );
+		} else {
+			container.style.cssText = 'position:fixed;top:80px;right:20px;width:320px;max-height:calc(100vh - 100px);overflow-y:auto;background:#fff;border:1px solid #ddd;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.15);z-index:99999;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif;font-size:13px;';
+			document.body.appendChild( container );
+			console.log( 'Block Ledger: floating panel rendered' );
+		}
 	}
 	const root = window.wp.element.createRoot( container );
 	root.render( window.wp.element.createElement( BlockLedgerFloatingContent ) );
 }
-setTimeout( injectBlockLedgerPanel, 800 );
+setTimeout( mountBlockLedgerPanel, 800 );
