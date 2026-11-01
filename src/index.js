@@ -656,7 +656,12 @@ function registerBlockLedgerPlugin() {
 	}
 }
 
-registerBlockLedgerPlugin();
+// On the standalone admin page we render into a plain div, so skip
+// wp.plugins registration entirely. In the editor, register the sidebar.
+const isAdminPage = !! document.getElementById( 'block-ledger-admin-root' );
+if ( ! isAdminPage ) {
+	registerBlockLedgerPlugin();
+}
 
 // Mount the panel: on the standalone admin page use that container,
 // otherwise inject into the editor sidebar with a floating fallback.
