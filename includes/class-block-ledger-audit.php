@@ -73,6 +73,7 @@ final class Block_Ledger_Audit {
 		}
 
 		update_option( 'block_ledger_indexed', true );
+		update_option( 'block_ledger_last_indexed', time() );
 	}
 
 	/**
@@ -191,6 +192,7 @@ final class Block_Ledger_Audit {
 				return rest_ensure_response( array(
 					'map'   => $this->usage_map(),
 					'ready' => (bool) get_option( 'block_ledger_indexed', false ),
+					'last_indexed' => get_option( 'block_ledger_last_indexed', null ),
 				) );
 			},
 			'permission_callback' => function () {

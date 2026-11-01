@@ -63,10 +63,23 @@ function BlockLedgerFloatingContent() {
 	const [ ptAllowed, setPtAllowed ] = useState( {} );
 	const [ ptSaved, setPtSaved ] = useState( '{}' );
 	const [ ptSaving, setPtSaving ] = useState( false );
+	const [ lastIndexed, setLastIndexed ] = useState( null );
+	const [ apiError, setApiError ] = useState( null );
 
 	useEffect( () => {
-		api( '/usage' ).then( ( res ) => setMap( res.map || {} ) ).catch( () => setMap( {} ) );
-		api( '/policy' ).then( ( res ) => {
+		api( '/usage' )
+			.then( ( res ) => {
+				setMap( res.map || {} );
+				setLastIndexed( res.last_indexed || null );
+				setApiError( null );
+			} )
+			.catch( ( e ) => {
+				setMap( {} );
+				setApiError( e?.message || __( 'Failed to load usage data.', 'block-ledger' ) );
+			} );
+		api( '/policy' )
+			.then( ( res ) => {
+				setApiError( null );
 			setDenied( res.denied || [] );
 			const pt = res.post_types || {};
 			const managed = {};
@@ -239,7 +252,17 @@ function BlockLedgerFloatingContent() {
 		<>
 			<PanelBody initialOpen={ true } title={ __( 'Block usage', 'block-ledger' ) }>
 				{ notice && <Notice status={ notice.status } isDismissible={ false }>{ notice.text }</Notice> }
+				{ apiError && <Notice status="warning" isDismissible={ false }>{ apiError }</Notice> }
 				<div style={ { display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' } }>
+					{ lastIndexed && (
+						<span style={ { fontSize: '12px', color: '#666' } }>
+							{ sprintf(
+								/* translators: %s: date/time */
+								__( 'Last indexed: %s', 'block-ledger' ),
+								new Date( lastIndexed * 1000 ).toLocaleString()
+							) }
+						</span>
+					) }
 					<Button variant="secondary" isBusy={ busy } onClick={ reindex }>
 						{ __( 'Reindex', 'block-ledger' ) }
 					</Button>
@@ -346,6 +369,8 @@ function BlockLedgerSidebar() {
 	const [ ptAllowed, setPtAllowed ] = useState( {} ); // { pt: [blockName] }
 	const [ ptSaved, setPtSaved ] = useState( '{}' );   // last-persisted map, for a dirty check
 	const [ ptSaving, setPtSaving ] = useState( false );
+	const [ lastIndexed, setLastIndexed ] = useState( null );
+	const [ apiError, setApiError ] = useState( null );
 
 	useEffect( () => {
 		api( '/usage' )
@@ -528,7 +553,17 @@ function BlockLedgerSidebar() {
 		<PluginSidebar name="block-ledger/control" title={ __( 'Block Ledger', 'block-ledger' ) } icon="shield">
 			<PanelBody initialOpen={ true } title={ __( 'Block usage', 'block-ledger' ) }>
 				{ notice && <Notice status={ notice.status } isDismissible={ false }>{ notice.text }</Notice> }
+				{ apiError && <Notice status="warning" isDismissible={ false }>{ apiError }</Notice> }
 				<div style={ { display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' } }>
+					{ lastIndexed && (
+						<span style={ { fontSize: '12px', color: '#666' } }>
+							{ sprintf(
+								/* translators: %s: date/time */
+								__( 'Last indexed: %s', 'block-ledger' ),
+								new Date( lastIndexed * 1000 ).toLocaleString()
+							) }
+						</span>
+					) }
 					<Button variant="secondary" isBusy={ busy } onClick={ reindex }>
 						{ __( 'Reindex', 'block-ledger' ) }
 					</Button>
