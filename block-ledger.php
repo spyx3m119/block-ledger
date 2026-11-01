@@ -103,8 +103,8 @@ add_action( 'enqueue_block_editor_assets', 'block_ledger_enqueue_editor' );
 // Standalone admin page under Tools.
 add_action( 'admin_menu', function() {
 	add_menu_page(
-		__( 'Block Ledger', 'block-ledger' ),
-		__( 'Block Ledger', 'block-ledger' ),
+		esc_html__( 'Block Ledger', 'block-ledger' ),
+		esc_html__( 'Block Ledger', 'block-ledger' ),
 		'edit_posts',
 		'block-ledger',
 		'block_ledger_admin_page',
@@ -115,7 +115,7 @@ add_action( 'admin_menu', function() {
 
 function block_ledger_admin_page() {
 	if ( ! current_user_can( 'edit_posts' ) ) {
-		wp_die( __( 'You do not have sufficient permissions to access this page.', 'block-ledger' ) );
+		wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'block-ledger' ) );
 	}
 	?>
 	<div class="wrap">
