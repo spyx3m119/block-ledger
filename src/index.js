@@ -568,12 +568,23 @@ function mountBlockLedgerPanel() {
 		console.log( 'Block Ledger: mounted on admin page' );
 		return;
 	}
-	// Editor context: floating panel (sidebar injection gets wiped by React re-renders).
+	// Editor context: inject into sidebar. Use insertBefore on last child
+	// (React wipes appendChild but preserves insertBefore on managed containers).
+	const sidebar = document.querySelector( '.edit-post-sidebar, #editor-sidebar, .interface-interface-skeleton__sidebar' );
 	const container = document.createElement( 'div' );
 	container.id = 'block-ledger-panel';
-	container.style.cssText = 'position:fixed;top:60px;right:20px;width:340px;max-height:calc(100vh - 80px);overflow-y:auto;background:#fff;border:1px solid #ddd;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.15);z-index:99999;font-family:-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Oxygen-Sans,Ubuntu,Cantarell,\"Helvetica Neue\",sans-serif;font-size:13px;padding:12px;';
-	document.body.appendChild( container );
-	console.log( 'Block Ledger: floating panel rendered' );
+	container.style.cssText = 'padding:12px;border-top:1px solid #ddd;background:#fff;';
+	if ( sidebar && sidebar.lastChild ) {
+		sidebar.insertBefore( container, sidebar.lastChild );
+		console.log( 'Block Ledger: panel injected into sidebar (before last child)' );
+	} else if ( sidebar ) {
+		sidebar.appendChild( container );
+		console.log( 'Block Ledger: panel appended to sidebar' );
+	} else {
+		container.style.cssText = 'position:fixed;top:60px;right:20px;width:340px;max-height:calc(100vh - 80px);overflow-y:auto;background:#fff;border:1px solid #ddd;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.15);z-index:99999;font-family:-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Oxygen-Sans,Ubuntu,Cantarell,\"Helvetica Neue\",sans-serif;font-size:13px;padding:12px;';
+		document.body.appendChild( container );
+		console.log( 'Block Ledger: floating panel rendered (fallback)' );
+	}
 	const root = window.wp.element.createRoot( container );
 	root.render( window.wp.element.createElement( BlockLedgerFloatingContent ) );
 }
