@@ -1,7 +1,7 @@
 import { registerPlugin } from '@wordpress/plugins';
 import { PluginSidebar, PluginSidebarMoreMenuItem } from '@wordpress/edit-post';
 import { PanelBody, Button, Spinner, Notice, SelectControl, ToggleControl } from '@wordpress/components';
-import { createElement as el, useState, useEffect, useCallback } from '@wordpress/element';
+import { createElement as el, useState, useEffect, useCallback, Fragment } from '@wordpress/element';
 import { __, _n, sprintf } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import { addFilter } from '@wordpress/hooks';
@@ -510,7 +510,7 @@ function BlockLedgerFloatingContent() {
 }
 
 function BlockLedgerSidebar() {
-	return el( 'div', null,
+	return el( Fragment, null,
 		el( PluginSidebarMoreMenuItem, { target: 'block-ledger/control', icon: 'shield' }, __( 'Block Ledger', 'block-ledger' ) ),
 		el( PluginSidebar, { name: 'block-ledger/control', title: __( 'Block Ledger', 'block-ledger' ), icon: 'shield' },
 			el( BlockLedgerFloatingContent )
