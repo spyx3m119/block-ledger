@@ -787,29 +787,38 @@ if ( ! isAdminPage ) {
 	registerBlockLedgerPlugin();
 }
 
-// Mount the panel: on the standalone admin page use that container,
-// otherwise inject into the editor sidebar with a floating fallback.
+// Mount the panel: standalone admin page or editor sidebar fallback.
 function mountBlockLedgerPanel() {
-	if ( ! window.wp || ! window.wp.element || ! window.wp.element.createRoot ) {
+	const adminRootEl = document.getElementById( 'block-ledger-admin-root' );
+	if ( adminRootEl ) {
+		// Standalone admin page: wp.element may not exist, so wire up React
+		// from the globally loaded WordPress scripts and render directly.
+		if ( ! window.wp ) window.wp = {};
+		if ( ! window.wp.element ) {
+			window.wp.element = {
+				createElement: window.React.createElement,
+				createRoot: window.ReactDOM.createRoot,
+			};
+		}
+		const container = document.createElement( 'div' );
+		adminRootEl.appendChild( container );
+		const root = window.wp.element.createRoot( container );
+		root.render( window.wp.element.createElement( BlockLedgerFloatingContent ) );
+		console.log( 'Block Ledger: mounted on admin page' );
 		return;
 	}
-	const adminRoot = document.getElementById( 'block-ledger-admin-root' );
+	// Editor context: keep the existing sidebar/floating fallback behavior.
+	const sidebar = document.querySelector( '.edit-post-sidebar, #editor-sidebar, .interface-interface-skeleton__sidebar' );
 	const container = document.createElement( 'div' );
-	if ( adminRoot ) {
-		adminRoot.appendChild( container );
-		console.log( 'Block Ledger: mounted on admin page' );
+	container.id = 'block-ledger-panel';
+	container.style.cssText = 'padding:16px;border-bottom:1px solid #ddd;background:#fff;';
+	if ( sidebar ) {
+		sidebar.insertBefore( container, sidebar.firstChild );
+		console.log( 'Block Ledger: panel injected into sidebar' );
 	} else {
-		const sidebar = document.querySelector( '.edit-post-sidebar, #editor-sidebar, .interface-interface-skeleton__sidebar' );
-		container.id = 'block-ledger-panel';
-		container.style.cssText = 'padding:16px;border-bottom:1px solid #ddd;background:#fff;';
-		if ( sidebar ) {
-			sidebar.insertBefore( container, sidebar.firstChild );
-			console.log( 'Block Ledger: panel injected into sidebar' );
-		} else {
-			container.style.cssText = 'position:fixed;top:80px;right:20px;width:320px;max-height:calc(100vh - 100px);overflow-y:auto;background:#fff;border:1px solid #ddd;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.15);z-index:99999;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif;font-size:13px;';
-			document.body.appendChild( container );
-			console.log( 'Block Ledger: floating panel rendered' );
-		}
+		container.style.cssText = 'position:fixed;top:80px;right:20px;width:320px;max-height:calc(100vh - 100px);overflow-y:auto;background:#fff;border:1px solid #ddd;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.15);z-index:99999;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif;font-size:13px;';
+		document.body.appendChild( container );
+		console.log( 'Block Ledger: floating panel rendered' );
 	}
 	const root = window.wp.element.createRoot( container );
 	root.render( window.wp.element.createElement( BlockLedgerFloatingContent ) );
