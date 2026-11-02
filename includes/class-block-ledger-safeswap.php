@@ -46,7 +46,7 @@ final class Block_Ledger_SafeSwap {
 
 		$table = $wpdb->prefix . Block_Ledger_Audit::TABLE;
 		$ids   = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$wpdb->prepare( "SELECT DISTINCT post_id FROM {$table} WHERE block_name = %s AND post_id > 0", $block_name )
+			$wpdb->prepare( "SELECT DISTINCT post_id FROM {$table} WHERE block_name = %s AND post_id > 0", $block_name ) // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		);
 
 		$snapshot = (array) get_option( self::OPTION_SNAPSHOT, array() );

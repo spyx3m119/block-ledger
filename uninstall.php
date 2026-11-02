@@ -16,6 +16,7 @@ delete_option( 'block_ledger_snapshot' );
 delete_option( 'block_ledger_indexed' );
 
 $bl_table = $wpdb->prefix . 'block_ledger_usage';
-$wpdb->query( "DROP TABLE IF EXISTS {$bl_table}" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+$wpdb->query( "DROP TABLE IF EXISTS {$bl_table}" );
 
 wp_clear_scheduled_hook( 'block_ledger_reindex' );
