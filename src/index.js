@@ -568,18 +568,15 @@ function mountBlockLedgerPanel() {
 		console.log( 'Block Ledger: mounted on admin page' );
 		return;
 	}
-	// Editor context: inject into sidebar. Use insertBefore on last child
-	// (React wipes appendChild but preserves insertBefore on managed containers).
+	// Editor context: inject before first child (React preserves this),
+	// then use CSS order to push it visually to the bottom of the sidebar.
 	const sidebar = document.querySelector( '.edit-post-sidebar, #editor-sidebar, .interface-interface-skeleton__sidebar' );
 	const container = document.createElement( 'div' );
 	container.id = 'block-ledger-panel';
-	container.style.cssText = 'padding:12px;border-top:1px solid #ddd;background:#fff;';
-	if ( sidebar && sidebar.lastChild ) {
-		sidebar.insertBefore( container, sidebar.lastChild );
-		console.log( 'Block Ledger: panel injected into sidebar (before last child)' );
-	} else if ( sidebar ) {
-		sidebar.appendChild( container );
-		console.log( 'Block Ledger: panel appended to sidebar' );
+	container.style.cssText = 'padding:12px;border-top:1px solid #ddd;background:#fff;order:999;flex-shrink:0;';
+	if ( sidebar ) {
+		sidebar.insertBefore( container, sidebar.firstChild );
+		console.log( 'Block Ledger: panel injected into sidebar (top, CSS-ordered to bottom)' );
 	} else {
 		container.style.cssText = 'position:fixed;top:60px;right:20px;width:340px;max-height:calc(100vh - 80px);overflow-y:auto;background:#fff;border:1px solid #ddd;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.15);z-index:99999;font-family:-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Oxygen-Sans,Ubuntu,Cantarell,\"Helvetica Neue\",sans-serif;font-size:13px;padding:12px;';
 		document.body.appendChild( container );
