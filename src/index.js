@@ -614,16 +614,7 @@ function BlockLedgerFloatingContent() {
 					</Button>
 				</PanelBody>
 			) }
-			{ CAN_MANAGE && (
-				<PanelBody initialOpen={ false } title={ __( 'Safe remove', 'block-ledger' ) }>
-					<p style={ { fontSize: '12px', color: 'var(--muted-foreground, #666)', margin: 0 } }>
-						{ __(
-							'Retire converts every use of a block into plain static HTML so the block can be removed without breaking content. The original is snapshotted, so Restore brings it back. Validate on a staging copy first.',
-							'block-ledger'
-						) }
-					</p>
-				</PanelBody>
-			) }
+
 
 			{ ! IS_ADMIN_PAGE && (
 				<>
