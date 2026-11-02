@@ -726,7 +726,7 @@ function mountBlockLedgerPanel() {
 	const sidebar = document.querySelector( '.edit-post-sidebar, #editor-sidebar, .interface-interface-skeleton__sidebar' );
 	const container = document.createElement( 'div' );
 	container.id = 'block-ledger-panel';
-	container.style.cssText = 'padding:8px;border-top:1px solid #ddd;background:#fff;max-height:50vh;overflow-y:auto;overflow-x:hidden;box-sizing:border-box;width:100%;max-width:280px;';
+	container.style.cssText = 'padding:8px;border-top:1px solid #ddd;background:#fff;max-height:50vh;overflow-y:auto;overflow-x:hidden;box-sizing:border-box;width:100%;max-width:320px;';
 	if ( sidebar ) {
 		sidebar.insertBefore( container, sidebar.firstChild );
 		console.log( 'Block Ledger: panel injected into sidebar' );
