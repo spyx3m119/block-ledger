@@ -314,6 +314,14 @@ function BlockLedgerFloatingContent() {
 			<PanelBody initialOpen={ true } title={ __( 'Block usage', 'block-ledger' ) }>
 				{ notice && <Notice status={ notice.status } isDismissible={ false }>{ notice.text }</Notice> }
 				{ apiError && <Notice status="warning" isDismissible={ false }>{ apiError }</Notice> }
+				{ CAN_MANAGE && (
+					<p style={ { fontSize: '11px', color: 'var(--muted-foreground, #666)', margin: '0 0 8px', padding: '6px 8px', background: 'var(--card, #f9f9f9)', borderRadius: 3, borderLeft: '3px solid #e6a23c' } }>
+						{ __(
+							'Retire converts every use of a block into plain static HTML so the block can be removed without breaking content. The original is snapshotted, so Restore brings it back. Validate on a staging copy first.',
+							'block-ledger'
+						) }
+					</p>
+				) }
 				<div style={ { display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' } }>
 					{ lastIndexed && (
 						<span style={ { fontSize: '12px', color: '#666' } }>
@@ -440,16 +448,7 @@ function BlockLedgerFloatingContent() {
 					</Button>
 				</PanelBody>
 			) }
-			{ CAN_MANAGE && (
-				<PanelBody initialOpen={ false } title={ __( 'Safe remove', 'block-ledger' ) }>
-					<p style={ { fontSize: '12px', color: 'var(--muted-foreground, #666)', margin: 0 } }>
-						{ __(
-							'Retire converts every use of a block into plain static HTML so the block can be removed without breaking content. The original is snapshotted, so Restore brings it back. Validate on a staging copy first.',
-							'block-ledger'
-						) }
-					</p>
-				</PanelBody>
-			) }
+
 
 			{ ! IS_ADMIN_PAGE && (
 				<>
