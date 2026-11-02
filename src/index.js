@@ -16,7 +16,7 @@ document.body.appendChild( _blDiv );
 const DATA = window.blockLedgerData || {};
 const REST_ROOT = DATA.restRoot || '';
 const REST_NONCE = DATA.restNonce || '';
-const CAN_MANAGE = DATA.canManage === true;
+const CAN_MANAGE = DATA.canManage === true || DATA.canManage === '1';
 
 function api( path, options = {} ) {
 	return apiFetch( {
