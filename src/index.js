@@ -632,17 +632,6 @@ function BlockLedgerFloatingContent() {
 				<BlockTreeNavigator />
 			</PanelBody>
 
-			<PanelBody initialOpen={ false } title={ __( 'Spotlight mode', 'block-ledger' ) }>
-				<p style={ { fontSize: '12px', color: 'var(--muted-foreground, #666)', margin: 0 } }>
-					{ __( 'Dim everything except the currently selected block to reduce visual noise while editing.', 'block-ledger' ) }
-				</p>
-				<ToggleControl
-					label={ __( 'Enable spotlight', 'block-ledger' ) }
-					checked={ spotlightOn }
-					onChange={ toggleSpotlight }
-				/>
-			</PanelBody>
-
 			</>
 		) }
 
