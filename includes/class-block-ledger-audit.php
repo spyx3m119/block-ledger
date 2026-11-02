@@ -62,7 +62,7 @@ final class Block_Ledger_Audit {
 		global $wpdb;
 
 		$table   = $wpdb->prefix . self::TABLE;
-		$wpdb->query( "TRUNCATE TABLE {$table}" ); // phpcs:ignore — trusted schema, admin-triggered.
+		$wpdb->query( "TRUNCATE TABLE {$table}" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery
 
 		$now     = current_time( 'mysql', true );
 		$surfaces = $this->collect_surfaces();
@@ -152,7 +152,7 @@ final class Block_Ledger_Audit {
 		global $wpdb;
 		$table = $wpdb->prefix . self::TABLE;
 
-		$rows = $wpdb->get_results(
+		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			"SELECT block_name, COUNT(*) AS uses, COUNT(DISTINCT post_id) AS items
 			 FROM {$table}
 			 GROUP BY block_name
@@ -178,7 +178,7 @@ final class Block_Ledger_Audit {
 		global $wpdb;
 		$table = $wpdb->prefix . self::TABLE;
 
-		$count = (int) $wpdb->get_var(
+		$count = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE block_name = %s", $block_name )
 		);
 
