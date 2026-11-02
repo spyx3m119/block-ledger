@@ -101,7 +101,6 @@ function BlockLedgerFloatingContent() {
 	const [ ptSaved, setPtSaved ] = useState( '{}' );
 	const [ ptSaving, setPtSaving ] = useState( false );
 	const [ locks, setLocks ] = useState( {} );
-	const [ spotlightOn, setSpotlightOn ] = useState( false );
 	const [ searchQuery, setSearchQuery ] = useState( '' );
 	const [ collapsedGroups, setCollapsedGroups ] = useState( {} );
 	const [ lastIndexed, setLastIndexed ] = useState( null );
@@ -152,20 +151,6 @@ function BlockLedgerFloatingContent() {
 			setBlockTypes( blocksStore.getBlockTypes() );
 		}
 	}, [] );
-
-	useEffect( () => {
-		const style = document.createElement( 'style' );
-		style.id = 'bl-spotlight-style';
-		style.textContent = spotlightOn
-			? '.block-editor-block-list__layout .wp-block:not(.is-selected) { opacity: 0.25; filter: grayscale(0.6); transition: opacity 0.2s, filter 0.2s; } .block-editor-block-list__layout .wp-block.is-selected { opacity: 1; filter: none; }'
-			: '';
-		const existing = document.getElementById( 'bl-spotlight-style' );
-		if ( existing ) existing.remove();
-		document.head.appendChild( style );
-		return () => { const el = document.getElementById( 'bl-spotlight-style' ); if ( el ) el.remove(); };
-	}, [ spotlightOn ] );
-
-	const toggleSpotlight = useCallback( () => setSpotlightOn( ( v ) => ! v ), [] );
 
 	const refresh = useCallback( () => {
 		return api( '/usage' ).then( ( res ) => setMap( res.map || {} ) );
@@ -472,17 +457,6 @@ function BlockLedgerFloatingContent() {
 				<BlockTreeNavigator />
 			</PanelBody>
 
-			<PanelBody initialOpen={ false } title={ __( 'Spotlight mode', 'block-ledger' ) }>
-				<p style={ { fontSize: '12px', color: 'var(--muted-foreground, #666)', margin: 0 } }>
-					{ __( 'Dim everything except the currently selected block to reduce visual noise while editing.', 'block-ledger' ) }
-				</p>
-				<ToggleControl
-					label={ __( 'Enable spotlight', 'block-ledger' ) }
-					checked={ spotlightOn }
-					onChange={ toggleSpotlight }
-				/>
-			</PanelBody>
-
 			</>
 		) }
 
@@ -765,7 +739,7 @@ function mountBlockLedgerPanel() {
 	const sidebar = document.querySelector( '.edit-post-sidebar, #editor-sidebar, .interface-interface-skeleton__sidebar' );
 	const container = document.createElement( 'div' );
 	container.id = 'block-ledger-panel';
-	container.style.cssText = 'padding:12px;border-top:1px solid #ddd;background:#fff;';
+	container.style.cssText = 'padding:12px;border-top:1px solid #ddd;background:#fff;max-height:50vh;overflow-y:auto;';
 	if ( sidebar ) {
 		sidebar.insertBefore( container, sidebar.firstChild );
 		console.log( 'Block Ledger: panel injected into sidebar' );
