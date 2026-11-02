@@ -510,8 +510,11 @@ function BlockLedgerFloatingContent() {
 }
 
 function BlockLedgerSidebar() {
-	return el( PluginSidebar, { name: 'block-ledger/control', title: __( 'Block Ledger', 'block-ledger' ), icon: 'shield' },
-		el( BlockLedgerFloatingContent )
+	return el( 'div', null,
+		el( PluginSidebarMoreMenuItem, { target: 'block-ledger/control', icon: 'shield' }, __( 'Block Ledger', 'block-ledger' ) ),
+		el( PluginSidebar, { name: 'block-ledger/control', title: __( 'Block Ledger', 'block-ledger' ), icon: 'shield' },
+			el( BlockLedgerFloatingContent )
+		)
 	);
 }
 
