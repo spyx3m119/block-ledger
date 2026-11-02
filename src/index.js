@@ -510,9 +510,12 @@ function BlockLedgerFloatingContent() {
 }
 
 function BlockLedgerSidebar() {
-	return el( PluginSidebar, { name: 'block-ledger/control', title: __( 'Block Ledger', 'block-ledger' ), icon: 'shield' },
-		el( BlockLedgerFloatingContent )
-	);
+	return [
+		el( PluginSidebarMoreMenuItem, { target: 'block-ledger/control', icon: 'shield' }, __( 'Block Ledger', 'block-ledger' ) ),
+		el( PluginSidebar, { name: 'block-ledger/control', title: __( 'Block Ledger', 'block-ledger' ), icon: 'shield' },
+			el( BlockLedgerFloatingContent )
+		)
+	];
 }
 
 function registerBlockLedgerPlugin() {
@@ -542,11 +545,10 @@ function registerBlockLedgerPlugin() {
 
 // On the standalone admin page we render into a plain div, so skip
 // wp.plugins registration entirely. In the editor, register the sidebar.
-// Floating panel handles everything; skip PluginSidebar registration.
-// const isAdminPage = !! document.getElementById( 'block-ledger-admin-root' );
-// if ( ! isAdminPage ) {
-// 	registerBlockLedgerPlugin();
-// }
+const isAdminPage = !! document.getElementById( 'block-ledger-admin-root' );
+if ( ! isAdminPage ) {
+	registerBlockLedgerPlugin();
+}
 
 // Mount the panel: standalone admin page or editor sidebar fallback.
 function mountBlockLedgerPanel() {
@@ -585,4 +587,4 @@ function mountBlockLedgerPanel() {
 	const root = window.wp.element.createRoot( container );
 	root.render( window.wp.element.createElement( BlockLedgerFloatingContent ) );
 }
-setTimeout( mountBlockLedgerPanel, 800 );
+if ( IS_ADMIN_PAGE ) setTimeout( mountBlockLedgerPanel, 800 );
