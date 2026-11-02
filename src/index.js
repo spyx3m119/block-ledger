@@ -323,7 +323,9 @@ function BlockLedgerFloatingContent() {
 		) );
 
 	return (
-		<PanelBody initialOpen={ false } title={ __( 'Block Ledger', 'block-ledger' ) }>
+		IS_ADMIN_PAGE ? (
+			<>
+
 			<PanelBody initialOpen={ true } title={ __( 'Block usage', 'block-ledger' ) }>
 				{ notice && <Notice status={ notice.status } isDismissible={ false }>{ notice.text }</Notice> }
 				{ apiError && <Notice status="warning" isDismissible={ false }>{ apiError }</Notice> }
@@ -505,7 +507,195 @@ function BlockLedgerFloatingContent() {
 				</ul>
 			</PanelBody>
 			) }
-		</PanelBody>
+		
+			</>
+		) : (
+			<PanelBody initialOpen={ false } title={ __( 'Block Ledger', 'block-ledger' ) }>
+
+			<PanelBody initialOpen={ true } title={ __( 'Block usage', 'block-ledger' ) }>
+				{ notice && <Notice status={ notice.status } isDismissible={ false }>{ notice.text }</Notice> }
+				{ apiError && <Notice status="warning" isDismissible={ false }>{ apiError }</Notice> }
+				<div style={ { display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' } }>
+					{ lastIndexed && (
+						<span style={ { fontSize: '12px', color: '#666' } }>
+							{ sprintf(
+								/* translators: %s: date/time */
+								__( 'Last indexed: %s', 'block-ledger' ),
+								new Date( lastIndexed * 1000 ).toLocaleString()
+							) }
+						</span>
+					) }
+					<Button variant="secondary" isBusy={ busy } onClick={ reindex }>
+						{ __( 'Reindex', 'block-ledger' ) }
+					</Button>
+					{ CAN_MANAGE && (
+						<Button variant="secondary" isBusy={ busy } onClick={ doRestore }>
+							{ __( 'Restore', 'block-ledger' ) }
+						</Button>
+					) }
+					<span style={ { fontSize: '12px' } }>{ map ? `${ Object.keys( map ).length } blocks in use` : '' }</span>
+				</div>
+				{ map === null && <Spinner /> }
+				{ map && Object.keys( map ).length === 0 && (
+					<p style={ { fontSize: '12px', color: 'var(--muted-foreground, #666)' } }>
+						{ __( 'No blocks indexed yet. Click Reindex.', 'block-ledger' ) }
+					</p>
+				) }
+				<input
+					type="text"
+					placeholder={ __( 'Search blocks…', 'block-ledger' ) }
+					value={ searchQuery }
+					onChange={ ( e ) => setSearchQuery( e.target.value ) }
+					style={ { width: '100%', marginBottom: 8, padding: '4px 8px', fontSize: '12px', border: '1px solid #ddd', borderRadius: 3 } }
+				/>
+				{ groupedBlocks }
+			</PanelBody>
+
+			{ IS_ADMIN_PAGE && CAN_MANAGE && postTypes.length > 0 && (
+				<PanelBody initialOpen={ false } title={ __( 'Per-post-type policy', 'block-ledger' ) }>
+					<p style={ { fontSize: '12px', color: 'var(--muted-foreground, #666)', margin: 0 } }>
+						{ __(
+							'Override which blocks the inserter offers for a specific content type. When set, it wins over the global hide/allow policy.',
+							'block-ledger'
+						) }
+					</p>
+					<SelectControl
+						label={ __( 'Content type', 'block-ledger' ) }
+						value={ selectedPt }
+						options={ postTypes.map( ( pt ) => ( { label: pt.label, value: pt.slug } ) ) }
+						onChange={ setSelectedPt }
+					/>
+					{ selectedPt && (
+						<>
+							<p style={ { fontSize: '12px', color: 'var(--muted-foreground, #666)' } }>
+								{ managedNow
+									? __( 'Custom block list active for this type.', 'block-ledger' )
+									: __( 'This type follows the global policy.', 'block-ledger' ) }
+							</p>
+							{ ! managedNow ? (
+								<Button variant="secondary" onClick={ toggleManaged }>
+									{ __( 'Use a custom block list', 'block-ledger' ) }
+								</Button>
+							) : (
+								<>
+									<div style={ { maxHeight: 260, overflowY: 'auto', border: '1px solid var(--border-color, #ddd)', padding: 4 } }>
+										{ blockTypes.length === 0 && (
+											<p style={ { fontSize: '12px', color: 'var(--muted-foreground, #666)' } }>{ __( 'Loading blocks…', 'block-ledger' ) }</p>
+										) }
+										{ blockTypes.map( ( b ) => (
+											<ToggleControl
+												key={ b.name }
+												label={ b.title || b.name }
+												__nextHasNoMargin
+												checked={ ( ptAllowed[ selectedPt ] || [] ).includes( b.name ) }
+												onChange={ () => togglePtBlock( b.name ) }
+											/>
+										) ) }
+									</div>
+									<div style={ { display: 'flex', gap: 8, marginTop: 8 } }>
+										<Button variant="primary" isBusy={ ptSaving } disabled={ ! dirty } onClick={ savePtPolicy }>
+											{ __( 'Save', 'block-ledger' ) }
+										</Button>
+										<Button variant="secondary" onClick={ toggleManaged }>
+											{ __( 'Revert to global', 'block-ledger' ) }
+										</Button>
+									</div>
+								</>
+							) }
+						</>
+					) }
+				</PanelBody>
+			) }
+
+			{ CAN_MANAGE && (
+				<PanelBody initialOpen={ true } title={ __( 'Editor settings locks', 'block-ledger' ) }>
+					<p style={ { fontSize: '12px', color: 'var(--muted-foreground, #666)', margin: '0 0 8px' } }>
+						{ __( 'Disable editor toggles for all users:', 'block-ledger' ) }
+					</p>
+					<ToggleControl
+						label={ __( 'Disable code editor', 'block-ledger' ) }
+						__nextHasNoMargin
+						checked={ !! locks.codeEditingEnabled }
+						onChange={ () => toggleLock( 'codeEditingEnabled' ) }
+					/>
+					<ToggleControl
+						label={ __( 'Disable media upload', 'block-ledger' ) }
+						__nextHasNoMargin
+						checked={ !! locks.canUploadFiles }
+						onChange={ () => toggleLock( 'canUploadFiles' ) }
+					/>
+					<ToggleControl
+						label={ __( 'Disable RTL support', 'block-ledger' ) }
+						__nextHasNoMargin
+						checked={ !! locks.isRTL }
+						onChange={ () => toggleLock( 'isRTL' ) }
+					/>
+					<ToggleControl
+						label={ __( 'Disable fixed width', 'block-ledger' ) }
+						__nextHasNoMargin
+						checked={ !! locks.hasFixedWidth }
+						onChange={ () => toggleLock( 'hasFixedWidth' ) }
+					/>
+					<Button variant="primary" isBusy={ busy } onClick={ saveLocks } style={ { marginTop: 8 } }>
+						{ __( 'Save locks', 'block-ledger' ) }
+					</Button>
+				</PanelBody>
+			) }
+			{ CAN_MANAGE && (
+				<PanelBody initialOpen={ false } title={ __( 'Safe remove', 'block-ledger' ) }>
+					<p style={ { fontSize: '12px', color: 'var(--muted-foreground, #666)', margin: 0 } }>
+						{ __(
+							'Retire converts every use of a block into plain static HTML so the block can be removed without breaking content. The original is snapshotted, so Restore brings it back. Validate on a staging copy first.',
+							'block-ledger'
+						) }
+					</p>
+				</PanelBody>
+			) }
+
+			{ ! IS_ADMIN_PAGE && (
+				<>
+					<PanelBody initialOpen={ false } title={ __( 'Block tree', 'block-ledger' ) }>
+				<BlockTreeNavigator />
+			</PanelBody>
+
+			<PanelBody initialOpen={ false } title={ __( 'Spotlight mode', 'block-ledger' ) }>
+				<p style={ { fontSize: '12px', color: 'var(--muted-foreground, #666)', margin: 0 } }>
+					{ __( 'Dim everything except the currently selected block to reduce visual noise while editing.', 'block-ledger' ) }
+				</p>
+				<ToggleControl
+					label={ __( 'Enable spotlight', 'block-ledger' ) }
+					checked={ spotlightOn }
+					onChange={ toggleSpotlight }
+				/>
+			</PanelBody>
+
+			</>
+		) }
+
+			{ IS_ADMIN_PAGE && (
+				<PanelBody initialOpen={ false } title={ __( 'Pro features', 'block-ledger' ) }>
+				<ul style={ { listStyle: 'none', margin: 0, padding: 0, fontSize: '12px' } }>
+					<li style={ { padding: '6px 0', borderBottom: '1px solid #eee' } }>
+						<strong>{ __( 'De-lock-in migration wizard', 'block-ledger' ) }</strong>
+						<span style={ { marginLeft: 6, fontSize: '10px', background: '#7c3aed', color: '#fff', padding: '1px 5px', borderRadius: 3 } }>PRO</span>
+						<p style={ { margin: '2px 0 0', color: '#666' } }>{ __( 'Import from Elementor/Kadence, convert, verify, deactivate.', 'block-ledger' ) }</p>
+					</li>
+					<li style={ { padding: '6px 0', borderBottom: '1px solid #eee' } }>
+						<strong>{ __( 'Full-surface audit report', 'block-ledger' ) }</strong>
+						<span style={ { marginLeft: 6, fontSize: '10px', background: '#7c3aed', color: '#fff', padding: '1px 5px', borderRadius: 3 } }>PRO</span>
+						<p style={ { margin: '2px 0 0', color: '#666' } }>{ __( 'Exportable CSV/PDF of every block usage across all surfaces.', 'block-ledger' ) }</p>
+					</li>
+					<li style={ { padding: '6px 0' } }>
+						<strong>{ __( 'Role-based policies', 'block-ledger' ) }</strong>
+						<span style={ { marginLeft: 6, fontSize: '10px', background: '#7c3aed', color: '#fff', padding: '1px 5px', borderRadius: 3 } }>PRO</span>
+						<p style={ { margin: '2px 0 0', color: '#666' } }>{ __( 'Per-role insertion policies and editor setting locks.', 'block-ledger' ) }</p>
+					</li>
+				</ul>
+			</PanelBody>
+			) }
+		
+			</PanelBody>
+		)
 	);
 }
 
