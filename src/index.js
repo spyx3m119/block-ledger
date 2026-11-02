@@ -50,6 +50,34 @@ addFilter( 'blocks.useBlockFilters', 'block-ledger/hide-denied', ( blocks ) => {
  * Same UI as BlockLedgerSidebar, but without PluginSidebar wrappers so it can
  * render into a standalone floating div outside the editor sidebar context.
  */
+function BlockTreeNavigator() {
+	const [ tree, setTree ] = useState( null );
+	useEffect( () => {
+		const update = () => {
+			try {
+				const editor = select( 'core/block-editor' );
+				if ( editor && editor.getBlocks ) {
+					setTree( editor.getBlocks() );
+				}
+			} catch ( e ) {}
+		};
+		update();
+		const interval = setInterval( update, 2000 );
+		return () => clearInterval( interval );
+	}, [] );
+
+	const renderTree = ( blocks, depth = 0 ) => {
+		if ( ! blocks || ! blocks.length ) return null;
+		return blocks.map( ( b ) => el( 'div', { key: b.clientId, style: { paddingLeft: depth * 12 + 'px', fontSize: '11px', fontFamily: 'monospace', lineHeight: '1.6' } },
+			el( 'span', { style: { color: '#333' } }, b.name || 'unknown' ),
+			renderTree( b.innerBlocks, depth + 1 )
+		) );
+	};
+
+	if ( ! tree ) return el( 'p', { style: { fontSize: '12px', color: '#666' } }, __( 'No blocks yet.', 'block-ledger' ) );
+	return el( 'div', { style: { maxHeight: '200px', overflowY: 'auto' } }, renderTree( tree ) );
+}
+
 function BlockLedgerFloatingContent() {
 	const [ map, setMap ] = useState( null );
 	const [ busy, setBusy ] = useState( false );
@@ -64,6 +92,7 @@ function BlockLedgerFloatingContent() {
 	const [ ptSaved, setPtSaved ] = useState( '{}' );
 	const [ ptSaving, setPtSaving ] = useState( false );
 	const [ locks, setLocks ] = useState( {} );
+	const [ spotlightOn, setSpotlightOn ] = useState( false );
 	const [ lastIndexed, setLastIndexed ] = useState( null );
 	const [ apiError, setApiError ] = useState( null );
 
@@ -112,6 +141,20 @@ function BlockLedgerFloatingContent() {
 			setBlockTypes( blocksStore.getBlockTypes() );
 		}
 	}, [] );
+
+	useEffect( () => {
+		const style = document.createElement( 'style' );
+		style.id = 'bl-spotlight-style';
+		style.textContent = spotlightOn
+			? '.block-editor-block-list__layout > .wp-block:not(.is-selected) { opacity: 0.25; filter: grayscale(0.5); transition: opacity 0.2s, filter 0.2s; }'
+			: '';
+		const existing = document.getElementById( 'bl-spotlight-style' );
+		if ( existing ) existing.remove();
+		document.head.appendChild( style );
+		return () => { const el = document.getElementById( 'bl-spotlight-style' ); if ( el ) el.remove(); };
+	}, [ spotlightOn ] );
+
+	const toggleSpotlight = useCallback( () => setSpotlightOn( ( v ) => ! v ), [] );
 
 	const refresh = useCallback( () => {
 		return api( '/usage' ).then( ( res ) => setMap( res.map || {} ) );
@@ -404,6 +447,43 @@ function BlockLedgerFloatingContent() {
 					</p>
 				</PanelBody>
 			) }
+
+			{ /* P1 — Ergonomics */ }
+			<PanelBody initialOpen={ false } title={ __( 'Block tree', 'block-ledger' ) }>
+				<BlockTreeNavigator />
+			</PanelBody>
+
+			<PanelBody initialOpen={ false } title={ __( 'Spotlight mode', 'block-ledger' ) }>
+				<p style={ { fontSize: '12px', color: 'var(--muted-foreground, #666)', margin: 0 } }>
+					{ __( 'Dim everything except the currently selected block to reduce visual noise while editing.', 'block-ledger' ) }
+				</p>
+				<ToggleControl
+					label={ __( 'Enable spotlight', 'block-ledger' ) }
+					checked={ spotlightOn }
+					onChange={ toggleSpotlight }
+				/>
+			</PanelBody>
+
+			{ /* P2 — Pro teaser */ }
+			<PanelBody initialOpen={ false } title={ __( 'Pro features', 'block-ledger' ) }>
+				<ul style={ { listStyle: 'none', margin: 0, padding: 0, fontSize: '12px' } }>
+					<li style={ { padding: '6px 0', borderBottom: '1px solid #eee' } }>
+						<strong>{ __( 'De-lock-in migration wizard', 'block-ledger' ) }</strong>
+						<span style={ { marginLeft: 6, fontSize: '10px', background: '#7c3aed', color: '#fff', padding: '1px 5px', borderRadius: 3 } }>PRO</span>
+						<p style={ { margin: '2px 0 0', color: '#666' } }>{ __( 'Import from Elementor/Kadence, convert, verify, deactivate.', 'block-ledger' ) }</p>
+					</li>
+					<li style={ { padding: '6px 0', borderBottom: '1px solid #eee' } }>
+						<strong>{ __( 'Full-surface audit report', 'block-ledger' ) }</strong>
+						<span style={ { marginLeft: 6, fontSize: '10px', background: '#7c3aed', color: '#fff', padding: '1px 5px', borderRadius: 3 } }>PRO</span>
+						<p style={ { margin: '2px 0 0', color: '#666' } }>{ __( 'Exportable CSV/PDF of every block usage across all surfaces.', 'block-ledger' ) }</p>
+					</li>
+					<li style={ { padding: '6px 0' } }>
+						<strong>{ __( 'Role-based policies', 'block-ledger' ) }</strong>
+						<span style={ { marginLeft: 6, fontSize: '10px', background: '#7c3aed', color: '#fff', padding: '1px 5px', borderRadius: 3 } }>PRO</span>
+						<p style={ { margin: '2px 0 0', color: '#666' } }>{ __( 'Per-role insertion policies and editor setting locks.', 'block-ledger' ) }</p>
+					</li>
+				</ul>
+			</PanelBody>
 		</>
 	);
 }
@@ -424,6 +504,7 @@ function BlockLedgerSidebar() {
 	const [ ptSaved, setPtSaved ] = useState( '{}' );   // last-persisted map, for a dirty check
 	const [ ptSaving, setPtSaving ] = useState( false );
 	const [ locks, setLocks ] = useState( {} );
+	const [ spotlightOn, setSpotlightOn ] = useState( false );
 	const [ lastIndexed, setLastIndexed ] = useState( null );
 	const [ apiError, setApiError ] = useState( null );
 
@@ -467,6 +548,20 @@ function BlockLedgerSidebar() {
 			setBlockTypes( blocksStore.getBlockTypes() );
 		}
 	}, [] );
+
+	useEffect( () => {
+		const style = document.createElement( 'style' );
+		style.id = 'bl-spotlight-style';
+		style.textContent = spotlightOn
+			? '.block-editor-block-list__layout > .wp-block:not(.is-selected) { opacity: 0.25; filter: grayscale(0.5); transition: opacity 0.2s, filter 0.2s; }'
+			: '';
+		const existing = document.getElementById( 'bl-spotlight-style' );
+		if ( existing ) existing.remove();
+		document.head.appendChild( style );
+		return () => { const el = document.getElementById( 'bl-spotlight-style' ); if ( el ) el.remove(); };
+	}, [ spotlightOn ] );
+
+	const toggleSpotlight = useCallback( () => setSpotlightOn( ( v ) => ! v ), [] );
 
 	const refresh = useCallback( () => {
 		return api( '/usage' ).then( ( res ) => setMap( res.map || {} ) );
