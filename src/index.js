@@ -87,6 +87,7 @@ function BlockTreeNavigator() {
 }
 
 function BlockLedgerFloatingContent() {
+	console.log( 'Block Ledger: FloatingContent rendering, IS_ADMIN_PAGE=', IS_ADMIN_PAGE );
 	const [ map, setMap ] = useState( null );
 	const [ busy, setBusy ] = useState( false );
 	const [ notice, setNotice ] = useState( null );
