@@ -582,4 +582,4 @@ function mountBlockLedgerPanel() {
 	const root = window.wp.element.createRoot( container );
 	root.render( window.wp.element.createElement( BlockLedgerFloatingContent ) );
 }
-setTimeout( mountBlockLedgerPanel, 800 );
+if ( IS_ADMIN_PAGE ) setTimeout( mountBlockLedgerPanel, 800 );
