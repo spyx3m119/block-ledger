@@ -361,6 +361,40 @@ function BlockLedgerFloatingContent() {
 			) }
 
 			{ CAN_MANAGE && (
+				<PanelBody initialOpen={ true } title={ __( 'Editor settings locks', 'block-ledger' ) }>
+					<p style={ { fontSize: '12px', color: 'var(--muted-foreground, #666)', margin: '0 0 8px' } }>
+						{ __( 'Disable editor toggles for all users:', 'block-ledger' ) }
+					</p>
+					<ToggleControl
+						label={ __( 'Disable code editor', 'block-ledger' ) }
+						__nextHasNoMargin
+						checked={ !! locks.codeEditingEnabled }
+						onChange={ () => toggleLock( 'codeEditingEnabled' ) }
+					/>
+					<ToggleControl
+						label={ __( 'Disable media upload', 'block-ledger' ) }
+						__nextHasNoMargin
+						checked={ !! locks.canUploadFiles }
+						onChange={ () => toggleLock( 'canUploadFiles' ) }
+					/>
+					<ToggleControl
+						label={ __( 'Disable RTL support', 'block-ledger' ) }
+						__nextHasNoMargin
+						checked={ !! locks.isRTL }
+						onChange={ () => toggleLock( 'isRTL' ) }
+					/>
+					<ToggleControl
+						label={ __( 'Disable fixed width', 'block-ledger' ) }
+						__nextHasNoMargin
+						checked={ !! locks.hasFixedWidth }
+						onChange={ () => toggleLock( 'hasFixedWidth' ) }
+					/>
+					<Button variant="primary" isBusy={ busy } onClick={ saveLocks } style={ { marginTop: 8 } }>
+						{ __( 'Save locks', 'block-ledger' ) }
+					</Button>
+				</PanelBody>
+			) }
+			{ CAN_MANAGE && (
 				<PanelBody initialOpen={ false } title={ __( 'Safe remove', 'block-ledger' ) }>
 					<p style={ { fontSize: '12px', color: 'var(--muted-foreground, #666)', margin: 0 } }>
 						{ __(
@@ -368,38 +402,6 @@ function BlockLedgerFloatingContent() {
 							'block-ledger'
 						) }
 					</p>
-					<div style={ { marginTop: 12, borderTop: '1px solid #ddd', paddingTop: 12 } }>
-						<p style={ { fontSize: '12px', color: 'var(--muted-foreground, #666)', margin: '0 0 8px' } }>
-							{ __( 'Lock editor settings (disables toggles for all users):', 'block-ledger' ) }
-						</p>
-						<ToggleControl
-							label={ __( 'Disable code editor', 'block-ledger' ) }
-							__nextHasNoMargin
-							checked={ !! locks.codeEditingEnabled }
-							onChange={ () => toggleLock( 'codeEditingEnabled' ) }
-						/>
-						<ToggleControl
-							label={ __( 'Disable media upload', 'block-ledger' ) }
-							__nextHasNoMargin
-							checked={ !! locks.canUploadFiles }
-							onChange={ () => toggleLock( 'canUploadFiles' ) }
-						/>
-						<ToggleControl
-							label={ __( 'Disable RTL support', 'block-ledger' ) }
-							__nextHasNoMargin
-							checked={ !! locks.isRTL }
-							onChange={ () => toggleLock( 'isRTL' ) }
-						/>
-						<ToggleControl
-							label={ __( 'Disable fixed width', 'block-ledger' ) }
-							__nextHasNoMargin
-							checked={ !! locks.hasFixedWidth }
-							onChange={ () => toggleLock( 'hasFixedWidth' ) }
-						/>
-						<Button variant="primary" isBusy={ busy } onClick={ saveLocks } style={ { marginTop: 8 } }>
-							{ __( 'Save locks', 'block-ledger' ) }
-						</Button>
-					</div>
 				</PanelBody>
 			) }
 		</>
@@ -695,6 +697,40 @@ function BlockLedgerSidebar() {
 			) }
 
 			{ CAN_MANAGE && (
+				<PanelBody initialOpen={ true } title={ __( 'Editor settings locks', 'block-ledger' ) }>
+					<p style={ { fontSize: '12px', color: 'var(--muted-foreground, #666)', margin: '0 0 8px' } }>
+						{ __( 'Disable editor toggles for all users:', 'block-ledger' ) }
+					</p>
+					<ToggleControl
+						label={ __( 'Disable code editor', 'block-ledger' ) }
+						__nextHasNoMargin
+						checked={ !! locks.codeEditingEnabled }
+						onChange={ () => toggleLock( 'codeEditingEnabled' ) }
+					/>
+					<ToggleControl
+						label={ __( 'Disable media upload', 'block-ledger' ) }
+						__nextHasNoMargin
+						checked={ !! locks.canUploadFiles }
+						onChange={ () => toggleLock( 'canUploadFiles' ) }
+					/>
+					<ToggleControl
+						label={ __( 'Disable RTL support', 'block-ledger' ) }
+						__nextHasNoMargin
+						checked={ !! locks.isRTL }
+						onChange={ () => toggleLock( 'isRTL' ) }
+					/>
+					<ToggleControl
+						label={ __( 'Disable fixed width', 'block-ledger' ) }
+						__nextHasNoMargin
+						checked={ !! locks.hasFixedWidth }
+						onChange={ () => toggleLock( 'hasFixedWidth' ) }
+					/>
+					<Button variant="primary" isBusy={ busy } onClick={ saveLocks } style={ { marginTop: 8 } }>
+						{ __( 'Save locks', 'block-ledger' ) }
+					</Button>
+				</PanelBody>
+			) }
+			{ CAN_MANAGE && (
 				<PanelBody initialOpen={ false } title={ __( 'Safe remove', 'block-ledger' ) }>
 					<p style={ { fontSize: '12px', color: 'var(--muted-foreground, #666)', margin: 0 } }>
 						{ __(
@@ -702,38 +738,6 @@ function BlockLedgerSidebar() {
 							'block-ledger'
 						) }
 					</p>
-					<div style={ { marginTop: 12, borderTop: '1px solid #ddd', paddingTop: 12 } }>
-						<p style={ { fontSize: '12px', color: 'var(--muted-foreground, #666)', margin: '0 0 8px' } }>
-							{ __( 'Lock editor settings (disables toggles for all users):', 'block-ledger' ) }
-						</p>
-						<ToggleControl
-							label={ __( 'Disable code editor', 'block-ledger' ) }
-							__nextHasNoMargin
-							checked={ !! locks.codeEditingEnabled }
-							onChange={ () => toggleLock( 'codeEditingEnabled' ) }
-						/>
-						<ToggleControl
-							label={ __( 'Disable media upload', 'block-ledger' ) }
-							__nextHasNoMargin
-							checked={ !! locks.canUploadFiles }
-							onChange={ () => toggleLock( 'canUploadFiles' ) }
-						/>
-						<ToggleControl
-							label={ __( 'Disable RTL support', 'block-ledger' ) }
-							__nextHasNoMargin
-							checked={ !! locks.isRTL }
-							onChange={ () => toggleLock( 'isRTL' ) }
-						/>
-						<ToggleControl
-							label={ __( 'Disable fixed width', 'block-ledger' ) }
-							__nextHasNoMargin
-							checked={ !! locks.hasFixedWidth }
-							onChange={ () => toggleLock( 'hasFixedWidth' ) }
-						/>
-						<Button variant="primary" isBusy={ busy } onClick={ saveLocks } style={ { marginTop: 8 } }>
-							{ __( 'Save locks', 'block-ledger' ) }
-						</Button>
-					</div>
 				</PanelBody>
 			) }
 		</PluginSidebar>
