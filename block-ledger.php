@@ -113,18 +113,15 @@ add_action( 'admin_menu', function() {
 	);
 } );
 
-function block_ledger_admin_page() {
-	if ( ! current_user_can( 'edit_posts' ) ) {
-		wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'block-ledger' ) );
+// Enqueue the React bundle on the Block Ledger admin page.
+add_action( 'admin_enqueue_scripts', function( $hook ) {
+	if ( 'toplevel_page_block-ledger' !== $hook ) {
+		return;
 	}
-	?>
-	<div class="wrap">
-		<h1><?php esc_html_e( 'Block Ledger', 'block-ledger' ); ?></h1>
-		<p><?php esc_html_e( 'Site-wide block usage, inserter policy, and safe lifecycle controls.', 'block-ledger' ); ?></p>
-		<div id="block-ledger-admin-root" style="max-width: 900px; margin: 20px 0;"></div>
-	</div>
-	<?php
-	wp_enqueue_script( 'block-ledger-editor', plugins_url( 'build/index.js', __FILE__ ), array(), BLOCK_LEDGER_VERSION, true );
+	// React/ReactDOM are needed for the standalone admin page
+	wp_enqueue_script( 'react' );
+	wp_enqueue_script( 'react-dom' );
+	wp_enqueue_script( 'block-ledger-editor', plugins_url( 'build/index.js', __FILE__ ), array( 'react', 'react-dom' ), BLOCK_LEDGER_VERSION, true );
 	wp_localize_script(
 		'block-ledger-editor',
 		'blockLedgerData',
@@ -137,6 +134,19 @@ function block_ledger_admin_page() {
 			'isAdminPage' => true,
 		)
 	);
+} );
+
+function block_ledger_admin_page() {
+	if ( ! current_user_can( 'edit_posts' ) ) {
+		wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'block-ledger' ) );
+	}
+	?>
+	<div class="wrap">
+		<h1><?php esc_html_e( 'Block Ledger', 'block-ledger' ); ?></h1>
+		<p><?php esc_html_e( 'Site-wide block usage, inserter policy, and safe lifecycle controls.', 'block-ledger' ); ?></p>
+		<div id="block-ledger-admin-root" style="max-width: 900px; margin: 20px 0;"></div>
+	</div>
+	<?php
 }
 
 // DEBUG: visible marker
