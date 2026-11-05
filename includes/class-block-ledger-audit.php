@@ -153,10 +153,7 @@ final class Block_Ledger_Audit {
 		$table = $wpdb->prefix . self::TABLE;
 
 		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			"SELECT block_name, COUNT(*) AS uses, COUNT(DISTINCT post_id) AS items
-			 FROM {$table} // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			 GROUP BY block_name
-			 ORDER BY uses DESC",
+			"SELECT block_name, COUNT(*) AS uses, COUNT(DISTINCT post_id) AS items FROM {$table} GROUP BY block_name ORDER BY uses DESC",
 			ARRAY_A
 		);
 
@@ -179,8 +176,8 @@ final class Block_Ledger_Audit {
 		$table = $wpdb->prefix . self::TABLE;
 
 		$count = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE block_name = %s", $block_name ) // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		);
+			$wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE block_name = %s", $block_name )
+		); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		return $count > 0;
 	}
